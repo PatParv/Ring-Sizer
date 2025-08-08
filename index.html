@@ -9,10 +9,15 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #f9f9f9;
       margin: 0;
-      padding: 2rem;
+      padding: 2rem 1rem;
       text-align: center;
     }
-
+    .step {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
     .sizer-wrapper {
       position: relative;
       max-width: 400px;
@@ -21,26 +26,32 @@
       background: #fff6f6;
       border-radius: 8px;
       border: 1px solid red;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
-
     #sizerCircle {
       width: 100px;
       height: 100px;
       border: 3px dashed black;
       border-radius: 50%;
-      background: rgba(211, 211, 211, 0.4);
-      position: relative;
+      background: rgba(200, 200, 200, 0.4);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       touch-action: none;
       cursor: grab;
       z-index: 10;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      margin-bottom: 1rem;
     }
-
+    #ringSizeOutput {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1rem;
+      font-weight: bold;
+      color: #111;
+      margin-top: 1.5rem;
+    }
     .drag-hint {
       position: absolute;
       top: 5px;
@@ -48,127 +59,150 @@
       font-size: 0.8rem;
       color: #999;
     }
-
-    #ringSizeOutput {
-      margin-top: 1.2rem;
-      font-size: 1rem;
-      font-weight: bold;
-      color: #111;
-    }
-
-    .size-display {
+    .size-row {
       display: flex;
       justify-content: space-between;
-      margin-top: 0.5rem;
-      font-size: 1rem;
+      padding: 0 1rem;
+      margin-top: 1rem;
       font-weight: bold;
     }
-
-    .size-display div {
-      flex: 1;
-      text-align: center;
-    }
-
-    .controls {
+    .button-row {
       margin-top: 1rem;
     }
-
-    .controls button {
-      font-size: 1.2rem;
+    .button-row button {
+      font-size: 1.5rem;
       padding: 0.4rem 1rem;
       margin: 0 0.5rem;
-      border: 1px solid #999;
-      background: #f0f0f0;
-      border-radius: 4px;
       cursor: pointer;
     }
-
-    .controls button:hover {
-      background: #e0e0e0;
+    .credit-card-box {
+      width: 200px;
+      height: 125.96px;
+      border: 2px solid #333;
+      margin: 2rem auto;
+      position: relative;
+    }
+    .controls {
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <h2>Measure Your Ring Size</h2>
-  <p>
-    Place a ring that fits you well directly on the screen. Adjust the circle below to match the
-    <strong>inner edge</strong> of your ring. When it matches, your ring size will appear automatically.
-  </p>
-
-  <div class="sizer-wrapper">
-    <div class="drag-hint">← drag →</div>
-    <div id="sizerCircle"></div>
-    <div id="ringSizeOutput">Adjust the circle to find your size</div>
-
-    <div class="size-display">
-      <div id="usSize">US: —</div>
-      <div id="ukSize">UK: —</div>
-      <div id="euSize">EU: —</div>
-    </div>
-
+  <div id="step1" class="step active">
+    <h2>Step 1: Calibrate Your Screen</h2>
+    <p>Resize the box to match your credit card (85.6 mm × 53.98 mm)</p>
+    <div class="credit-card-box" id="calibrationBox"></div>
     <div class="controls">
-      <button id="decrease">−</button>
-      <button id="increase">+</button>
+      <button onclick="finishCalibration()">Continue</button>
+      <button onclick="skipCalibration()">Skip Calibration</button>
+    </div>
+  </div>
+
+  <div id="step2" class="step">
+    <h2>Step 2: Measure Your Ring Size</h2>
+    <p>
+      Place a ring that fits you well directly on the screen. Adjust the circle below to match the
+      <strong>inner edge</strong> of your ring. Use drag or +/− for precision.
+    </p>
+    <div class="sizer-wrapper">
+      <div class="drag-hint">← drag →</div>
+      <div id="sizerCircle"></div>
+      <div id="ringSizeOutput">Adjust the circle to find your size</div>
+    </div>
+    <div class="button-row">
+      <button onclick="changeDiameter(-1)">−</button>
+      <button onclick="changeDiameter(1)">+</button>
+    </div>
+    <div class="size-row" id="sizeDisplay">
+      <span>US: -</span>
+      <span>UK: -</span>
+      <span>EU: -</span>
     </div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    let scale = 1;
+    let diameter = 100;
+    let isDragging = false;
+    let startX;
+
+    const usSizes = [
+      { mm: 14.1, us: "3", uk: "F½", eu: "44" },
+      { mm: 14.5, us: "3.5", uk: "G½", eu: "45" },
+      { mm: 14.9, us: "4", uk: "H½", eu: "46.5" },
+      { mm: 15.3, us: "4.5", uk: "I½", eu: "48" },
+      { mm: 15.7, us: "5", uk: "J½", eu: "49" },
+      { mm: 16.1, us: "5.5", uk: "K½", eu: "50.5" },
+      { mm: 16.5, us: "6", uk: "L½", eu: "52" },
+      { mm: 16.9, us: "6.5", uk: "M½", eu: "53" },
+      { mm: 17.3, us: "7", uk: "N½", eu: "54.5" },
+      { mm: 17.7, us: "7.5", uk: "O½", eu: "56" },
+      { mm: 18.1, us: "8", uk: "P½", eu: "57" },
+      { mm: 18.5, us: "8.5", uk: "Q½", eu: "58.5" },
+      { mm: 18.9, us: "9", uk: "R½", eu: "60" },
+      { mm: 19.4, us: "9.5", uk: "S½", eu: "61.5" },
+      { mm: 19.8, us: "10", uk: "T½", eu: "62.5" },
+      { mm: 20.2, us: "10.5", uk: "U½", eu: "64" },
+      { mm: 20.6, us: "11", uk: "V½", eu: "65" },
+      { mm: 21.0, us: "11.5", uk: "W½", eu: "66.5" },
+      { mm: 21.4, us: "12", uk: "X½", eu: "68" },
+      { mm: 21.8, us: "12.5", uk: "Z", eu: "69" },
+      { mm: 22.2, us: "13", uk: "Z½", eu: "70.5" }
+    ];
+
+    function finishCalibration() {
+      const box = document.getElementById("calibrationBox");
+      const actualWidth = 85.6; // mm
+      const displayedWidth = box.offsetWidth;
+      scale = actualWidth / displayedWidth;
+      localStorage.setItem("ringSizerScale", scale);
+      goToStep2();
+    }
+
+    function skipCalibration() {
+      scale = 1;
+      localStorage.setItem("ringSizerScale", scale);
+      goToStep2();
+    }
+
+    function goToStep2() {
+      document.getElementById("step1").classList.remove("active");
+      document.getElementById("step2").classList.add("active");
+      updateSize();
+    }
+
+    function changeDiameter(delta) {
+      diameter += delta;
+      diameter = Math.max(30, Math.min(250, diameter));
+      updateSize();
+    }
+
+    function getSizeFromDiameter(mm) {
+      return usSizes.reduce((prev, curr) => {
+        return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
+      });
+    }
+
+    function updateSize() {
       const sizer = document.getElementById("sizerCircle");
       const output = document.getElementById("ringSizeOutput");
-      const usOut = document.getElementById("usSize");
-      const ukOut = document.getElementById("ukSize");
-      const euOut = document.getElementById("euSize");
-      const plus = document.getElementById("increase");
-      const minus = document.getElementById("decrease");
+      const sizeDisplay = document.getElementById("sizeDisplay");
 
-      let diameter = 100;
-      let isDragging = false;
-      let startX;
+      sizer.style.width = `${diameter}px`;
+      sizer.style.height = `${diameter}px`;
 
-      const sizeChart = [
-        { mm: 14.1, us: "3", uk: "F", eu: "44" },
-        { mm: 14.5, us: "3.5", uk: "G", eu: "45" },
-        { mm: 14.9, us: "4", uk: "H", eu: "47" },
-        { mm: 15.3, us: "4.5", uk: "I", eu: "48" },
-        { mm: 15.7, us: "5", uk: "J", eu: "49" },
-        { mm: 16.1, us: "5.5", uk: "K", eu: "50" },
-        { mm: 16.5, us: "6", uk: "L", eu: "52" },
-        { mm: 16.9, us: "6.5", uk: "M", eu: "53" },
-        { mm: 17.3, us: "7", uk: "N", eu: "54" },
-        { mm: 17.7, us: "7.5", uk: "O", eu: "55" },
-        { mm: 18.1, us: "8", uk: "P", eu: "57" },
-        { mm: 18.5, us: "8.5", uk: "Q", eu: "58" },
-        { mm: 18.9, us: "9", uk: "R", eu: "59" },
-        { mm: 19.4, us: "9.5", uk: "S", eu: "60" },
-        { mm: 19.8, us: "10", uk: "T", eu: "62" },
-        { mm: 20.2, us: "10.5", uk: "U", eu: "63" },
-        { mm: 20.6, us: "11", uk: "V", eu: "64" },
-        { mm: 21.0, us: "11.5", uk: "W", eu: "66" },
-        { mm: 21.4, us: "12", uk: "X", eu: "67" },
-        { mm: 21.8, us: "12.5", uk: "Y", eu: "68" },
-        { mm: 22.2, us: "13", uk: "Z", eu: "70" }
-      ];
+      const mm = (diameter * (scale || 1)).toFixed(1);
+      const size = getSizeFromDiameter(mm);
 
-      function getSizeFromDiameter(mm) {
-        let closest = sizeChart.reduce((prev, curr) =>
-          Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
-        );
-        return closest;
-      }
+      output.textContent = `Diameter: ${mm} mm`;
+      sizeDisplay.innerHTML = `<span>US: ${size.us}</span><span>UK: ${size.uk}</span><span>EU: ${size.eu}</span>`;
+    }
 
-      function updateSize() {
-        sizer.style.width = `${diameter}px`;
-        sizer.style.height = `${diameter}px`;
-        const mm = diameter.toFixed(1);
-        const size = getSizeFromDiameter(parseFloat(mm));
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedScale = localStorage.getItem("ringSizerScale");
+      if (savedScale) scale = parseFloat(savedScale);
 
-        output.textContent = `Diameter: ${mm} mm`;
-        usOut.textContent = `US: ${size.us}`;
-        ukOut.textContent = `UK: ${size.uk}`;
-        euOut.textContent = `EU: ${size.eu}`;
-      }
-
+      const sizer = document.getElementById("sizerCircle");
       sizer.addEventListener("pointerdown", (e) => {
         isDragging = true;
         startX = e.clientX;
@@ -186,16 +220,6 @@
 
       sizer.addEventListener("pointerup", () => {
         isDragging = false;
-      });
-
-      plus.addEventListener("click", () => {
-        diameter = Math.min(250, diameter + 1);
-        updateSize();
-      });
-
-      minus.addEventListener("click", () => {
-        diameter = Math.max(30, diameter - 1);
-        updateSize();
       });
 
       updateSize();
