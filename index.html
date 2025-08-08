@@ -21,6 +21,10 @@
       background: #fff6f6;
       border-radius: 8px;
       border: 1px solid red;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     #sizerCircle {
@@ -29,14 +33,12 @@
       border: 3px dashed black;
       border-radius: 50%;
       background: rgba(211, 211, 211, 0.4);
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      position: relative;
       touch-action: none;
       cursor: grab;
       z-index: 10;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      margin-bottom: 1rem;
     }
 
     .drag-hint {
@@ -48,22 +50,41 @@
     }
 
     #ringSizeOutput {
-      position: absolute;
-      bottom: 15px;
-      left: 50%;
-      transform: translateX(-50%);
+      margin-top: 1.2rem;
       font-size: 1rem;
       font-weight: bold;
       color: #111;
-      text-align: center;
-      width: 100%;
     }
 
-    .size-row {
+    .size-display {
       display: flex;
       justify-content: space-between;
-      max-width: 90%;
-      margin: 1rem auto 0 auto;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    .size-display div {
+      flex: 1;
+      text-align: center;
+    }
+
+    .controls {
+      margin-top: 1rem;
+    }
+
+    .controls button {
+      font-size: 1.2rem;
+      padding: 0.4rem 1rem;
+      margin: 0 0.5rem;
+      border: 1px solid #999;
+      background: #f0f0f0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background: #e0e0e0;
     }
   </style>
 </head>
@@ -77,61 +98,75 @@
   <div class="sizer-wrapper">
     <div class="drag-hint">← drag →</div>
     <div id="sizerCircle"></div>
-    <div id="ringSizeOutput">
-      <div id="diameterText">Adjust the circle to find your size</div>
-      <div class="size-row" id="sizeRow" style="display:none;">
-        <div id="usSize">US: </div>
-        <div id="ukSize">UK: </div>
-        <div id="euSize">EU: </div>
-      </div>
+    <div id="ringSizeOutput">Adjust the circle to find your size</div>
+
+    <div class="size-display">
+      <div id="usSize">US: —</div>
+      <div id="ukSize">UK: —</div>
+      <div id="euSize">EU: —</div>
+    </div>
+
+    <div class="controls">
+      <button id="decrease">−</button>
+      <button id="increase">+</button>
     </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const sizer = document.getElementById("sizerCircle");
-      const diameterText = document.getElementById("diameterText");
-      const usSize = document.getElementById("usSize");
-      const ukSize = document.getElementById("ukSize");
-      const euSize = document.getElementById("euSize");
-      const sizeRow = document.getElementById("sizeRow");
+      const output = document.getElementById("ringSizeOutput");
+      const usOut = document.getElementById("usSize");
+      const ukOut = document.getElementById("ukSize");
+      const euOut = document.getElementById("euSize");
+      const plus = document.getElementById("increase");
+      const minus = document.getElementById("decrease");
 
       let diameter = 100;
       let isDragging = false;
       let startX;
 
       const sizeChart = [
-        { mm: 14.1, us: "3", uk: "F", eu: "44" }, { mm: 14.5, us: "3.5", uk: "G", eu: "45.5" },
-        { mm: 14.9, us: "4", uk: "H", eu: "46.5" }, { mm: 15.3, us: "4.5", uk: "I", eu: "48" },
-        { mm: 15.7, us: "5", uk: "J", eu: "49" }, { mm: 16.1, us: "5.5", uk: "K", eu: "50.5" },
-        { mm: 16.5, us: "6", uk: "L", eu: "51.5" }, { mm: 16.9, us: "6.5", uk: "M", eu: "53" },
-        { mm: 17.3, us: "7", uk: "N", eu: "54" }, { mm: 17.7, us: "7.5", uk: "O", eu: "55.5" },
-        { mm: 18.1, us: "8", uk: "P", eu: "57" }, { mm: 18.5, us: "8.5", uk: "Q", eu: "58" },
-        { mm: 18.9, us: "9", uk: "R", eu: "59.5" }, { mm: 19.4, us: "9.5", uk: "S", eu: "61" },
-        { mm: 19.8, us: "10", uk: "T", eu: "62" }, { mm: 20.2, us: "10.5", uk: "U", eu: "63.5" },
-        { mm: 20.6, us: "11", uk: "V", eu: "65" }, { mm: 21.0, us: "11.5", uk: "W", eu: "66" },
-        { mm: 21.4, us: "12", uk: "X", eu: "67.5" }, { mm: 21.8, us: "12.5", uk: "Y", eu: "69" },
+        { mm: 14.1, us: "3", uk: "F", eu: "44" },
+        { mm: 14.5, us: "3.5", uk: "G", eu: "45" },
+        { mm: 14.9, us: "4", uk: "H", eu: "47" },
+        { mm: 15.3, us: "4.5", uk: "I", eu: "48" },
+        { mm: 15.7, us: "5", uk: "J", eu: "49" },
+        { mm: 16.1, us: "5.5", uk: "K", eu: "50" },
+        { mm: 16.5, us: "6", uk: "L", eu: "52" },
+        { mm: 16.9, us: "6.5", uk: "M", eu: "53" },
+        { mm: 17.3, us: "7", uk: "N", eu: "54" },
+        { mm: 17.7, us: "7.5", uk: "O", eu: "55" },
+        { mm: 18.1, us: "8", uk: "P", eu: "57" },
+        { mm: 18.5, us: "8.5", uk: "Q", eu: "58" },
+        { mm: 18.9, us: "9", uk: "R", eu: "59" },
+        { mm: 19.4, us: "9.5", uk: "S", eu: "60" },
+        { mm: 19.8, us: "10", uk: "T", eu: "62" },
+        { mm: 20.2, us: "10.5", uk: "U", eu: "63" },
+        { mm: 20.6, us: "11", uk: "V", eu: "64" },
+        { mm: 21.0, us: "11.5", uk: "W", eu: "66" },
+        { mm: 21.4, us: "12", uk: "X", eu: "67" },
+        { mm: 21.8, us: "12.5", uk: "Y", eu: "68" },
         { mm: 22.2, us: "13", uk: "Z", eu: "70" }
       ];
 
       function getSizeFromDiameter(mm) {
-        return sizeChart.reduce((prev, curr) => {
-          return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
-        });
+        let closest = sizeChart.reduce((prev, curr) =>
+          Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
+        );
+        return closest;
       }
 
       function updateSize() {
         sizer.style.width = `${diameter}px`;
         sizer.style.height = `${diameter}px`;
-
         const mm = diameter.toFixed(1);
         const size = getSizeFromDiameter(parseFloat(mm));
 
-        diameterText.textContent = `Diameter: ${mm} mm`;
-        usSize.textContent = `US: ${size.us}`;
-        ukSize.textContent = `UK: ${size.uk}`;
-        euSize.textContent = `EU: ${size.eu}`;
-        sizeRow.style.display = 'flex';
+        output.textContent = `Diameter: ${mm} mm`;
+        usOut.textContent = `US: ${size.us}`;
+        ukOut.textContent = `UK: ${size.uk}`;
+        euOut.textContent = `EU: ${size.eu}`;
       }
 
       sizer.addEventListener("pointerdown", (e) => {
@@ -151,6 +186,16 @@
 
       sizer.addEventListener("pointerup", () => {
         isDragging = false;
+      });
+
+      plus.addEventListener("click", () => {
+        diameter = Math.min(250, diameter + 1);
+        updateSize();
+      });
+
+      minus.addEventListener("click", () => {
+        diameter = Math.max(30, diameter - 1);
+        updateSize();
       });
 
       updateSize();
