@@ -12,16 +12,17 @@
       padding: 2rem;
       text-align: center;
     }
+
     .sizer-wrapper {
       position: relative;
       max-width: 400px;
       height: 300px;
       margin: 2rem auto;
       background: #fff6f6;
-      text-align: center;
       border-radius: 8px;
       border: 1px solid red;
     }
+
     #sizerCircle {
       width: 100px;
       height: 100px;
@@ -37,22 +38,32 @@
       z-index: 10;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
-    #ringSizeOutput {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 1rem;
-      font-weight: bold;
-      color: #111;
-      white-space: pre-line; /* allows line breaks */
-    }
+
     .drag-hint {
       position: absolute;
       top: 5px;
       right: 10px;
       font-size: 0.8rem;
       color: #999;
+    }
+
+    #ringSizeOutput {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1rem;
+      font-weight: bold;
+      color: #111;
+      text-align: center;
+      width: 100%;
+    }
+
+    .size-row {
+      display: flex;
+      justify-content: space-between;
+      max-width: 90%;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -66,18 +77,24 @@
   <div class="sizer-wrapper">
     <div class="drag-hint">← drag →</div>
     <div id="sizerCircle"></div>
-    <div id="ringSizeOutput">Adjust the circle to find your size</div>
+    <div id="ringSizeOutput">
+      <div id="diameterText">Adjust the circle to find your size</div>
+      <div class="size-row" id="sizeRow" style="display:none;">
+        <div id="usSize">US: </div>
+        <div id="ukSize">UK: </div>
+        <div id="euSize">EU: </div>
+      </div>
+    </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const sizer = document.getElementById("sizerCircle");
-      const output = document.getElementById("ringSizeOutput");
-
-      if (!sizer || !output) {
-        console.error("Sizer circle or output not found!");
-        return;
-      }
+      const diameterText = document.getElementById("diameterText");
+      const usSize = document.getElementById("usSize");
+      const ukSize = document.getElementById("ukSize");
+      const euSize = document.getElementById("euSize");
+      const sizeRow = document.getElementById("sizeRow");
 
       let diameter = 100;
       let isDragging = false;
@@ -98,18 +115,23 @@
       ];
 
       function getSizeFromDiameter(mm) {
-        let closest = sizeChart.reduce((prev, curr) => {
+        return sizeChart.reduce((prev, curr) => {
           return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
         });
-        return closest;
       }
 
       function updateSize() {
         sizer.style.width = `${diameter}px`;
         sizer.style.height = `${diameter}px`;
+
         const mm = diameter.toFixed(1);
         const size = getSizeFromDiameter(parseFloat(mm));
-        output.textContent = `Diameter: ${mm} mm\nUS: ${size.us}\nUK: ${size.uk}\nEU: ${size.eu}`;
+
+        diameterText.textContent = `Diameter: ${mm} mm`;
+        usSize.textContent = `US: ${size.us}`;
+        ukSize.textContent = `UK: ${size.uk}`;
+        euSize.textContent = `EU: ${size.eu}`;
+        sizeRow.style.display = 'flex';
       }
 
       sizer.addEventListener("pointerdown", (e) => {
