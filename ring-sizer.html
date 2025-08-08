@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ring Size Finder</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 2rem;
+      text-align: center;
+    }
+    .sizer-wrapper {
+      position: relative;
+      max-width: 400px;
+      height: 300px;
+      margin: 2rem auto;
+      background: #fff6f6;
+      text-align: center;
+      border-radius: 8px;
+      border: 1px solid red;
+    }
+    #sizerCircle {
+      width: 100px;
+      height: 100px;
+      border: 3px dashed red;
+      border-radius: 50%;
+      background: rgba(255, 249, 196, 0.8);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      touch-action: none;
+      cursor: grab;
+      z-index: 10;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    #ringSizeOutput {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1rem;
+      font-weight: bold;
+      color: #111;
+    }
+    .drag-hint {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <h2>Measure Your Ring Size</h2>
+  <p>
+    Place a ring that fits you well directly on the screen. Adjust the circle below to match the
+    <strong>inner edge</strong> of your ring. When it matches, your ring size will appear automatically.
+  </p>
+
+  <div class="sizer-wrapper">
+    <div class="drag-hint">← drag →</div>
+    <div id="sizerCircle"></div>
+    <div id="ringSizeOutput">Adjust the circle to find your size</div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const sizer = document.getElementById("sizerCircle");
+      const output = document.getElementById("ringSizeOutput");
+
+      if (!sizer || !output) {
+        console.error("Sizer circle or output not found!");
+        return;
+      }
+
+      let diameter = 100;
+      let isDragging = false;
+      let startX;
+
+      const sizeChart = [
+        { mm: 14.1, us: "3" }, { mm: 14.5, us: "3.5" }, { mm: 14.9, us: "4" },
+        { mm: 15.3, us: "4.5" }, { mm: 15.7, us: "5" }, { mm: 16.1, us: "5.5" },
+        { mm: 16.5, us: "6" }, { mm: 16.9, us: "6.5" }, { mm: 17.3, us: "7" },
+        { mm: 17.7, us: "7.5" }, { mm: 18.1, us: "8" }, { mm: 18.5, us: "8.5" },
+        { mm: 18.9, us: "9" }, { mm: 19.4, us: "9.5" }, { mm: 19.8, us: "10" },
+        { mm: 20.2, us: "10.5" }, { mm: 20.6, us: "11" }, { mm: 21.0, us: "11.5" },
+        { mm: 21.4, us: "12" }, { mm: 21.8, us: "12.5" }, { mm: 22.2, us: "13" },
+        { mm: 22.6, us: "13.5" }, { mm: 23.0, us: "14" }, { mm: 23.4, us: "14.5" },
+        { mm: 23.8, us: "15" }, { mm: 24.2, us: "15.5" }, { mm: 24.6, us: "16" }
+      ];
+
+      function getSizeFromDiameter(mm) {
+        let closest = sizeChart.reduce((prev, curr) => {
+          return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
+        });
+        return closest.us;
+      }
+
+      function updateSize() {
+        sizer.style.width = `${diameter}px`;
+        sizer.style.height = `${diameter}px`;
+        const mm = diameter.toFixed(1);
+        const size = getSizeFromDiameter(mm);
+        output.textContent = `Diameter: ${mm} mm → US Size ${size}`;
+      }
+
+      sizer.addEventListener("pointerdown", (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        sizer.setPointerCapture(e.pointerId);
+      });
+
+      sizer.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        diameter += dx;
+        diameter = Math.max(30, Math.min(250, diameter));
+        startX = e.clientX;
+        updateSize();
+      });
+
+      sizer.addEventListener("pointerup", () => {
+        isDragging = false;
+      });
+
+      updateSize();
+    });
+  </script>
+</body>
+</html>
