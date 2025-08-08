@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Updated viewport meta to disable pinch-zoom -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Ring Size Finder</title>
   <style>
@@ -84,30 +83,32 @@
       let startX;
 
       const sizeChart = [
-        { mm: 14.1, us: "3" }, { mm: 14.5, us: "3.5" }, { mm: 14.9, us: "4" },
-        { mm: 15.3, us: "4.5" }, { mm: 15.7, us: "5" }, { mm: 16.1, us: "5.5" },
-        { mm: 16.5, us: "6" }, { mm: 16.9, us: "6.5" }, { mm: 17.3, us: "7" },
-        { mm: 17.7, us: "7.5" }, { mm: 18.1, us: "8" }, { mm: 18.5, us: "8.5" },
-        { mm: 18.9, us: "9" }, { mm: 19.4, us: "9.5" }, { mm: 19.8, us: "10" },
-        { mm: 20.2, us: "10.5" }, { mm: 20.6, us: "11" }, { mm: 21.0, us: "11.5" },
-        { mm: 21.4, us: "12" }, { mm: 21.8, us: "12.5" }, { mm: 22.2, us: "13" },
-        { mm: 22.6, us: "13.5" }, { mm: 23.0, us: "14" }, { mm: 23.4, us: "14.5" },
-        { mm: 23.8, us: "15" }, { mm: 24.2, us: "15.5" }, { mm: 24.6, us: "16" }
+        { mm: 14.1, us: "3", uk: "F", eu: "44" }, { mm: 14.5, us: "3.5", uk: "G", eu: "45.5" },
+        { mm: 14.9, us: "4", uk: "H", eu: "46.5" }, { mm: 15.3, us: "4.5", uk: "I", eu: "48" },
+        { mm: 15.7, us: "5", uk: "J", eu: "49" }, { mm: 16.1, us: "5.5", uk: "K", eu: "50.5" },
+        { mm: 16.5, us: "6", uk: "L", eu: "51.5" }, { mm: 16.9, us: "6.5", uk: "M", eu: "53" },
+        { mm: 17.3, us: "7", uk: "N", eu: "54" }, { mm: 17.7, us: "7.5", uk: "O", eu: "55.5" },
+        { mm: 18.1, us: "8", uk: "P", eu: "57" }, { mm: 18.5, us: "8.5", uk: "Q", eu: "58" },
+        { mm: 18.9, us: "9", uk: "R", eu: "59.5" }, { mm: 19.4, us: "9.5", uk: "S", eu: "61" },
+        { mm: 19.8, us: "10", uk: "T", eu: "62" }, { mm: 20.2, us: "10.5", uk: "U", eu: "63.5" },
+        { mm: 20.6, us: "11", uk: "V", eu: "65" }, { mm: 21.0, us: "11.5", uk: "W", eu: "66" },
+        { mm: 21.4, us: "12", uk: "X", eu: "67.5" }, { mm: 21.8, us: "12.5", uk: "Y", eu: "69" },
+        { mm: 22.2, us: "13", uk: "Z", eu: "70" }
       ];
 
       function getSizeFromDiameter(mm) {
         let closest = sizeChart.reduce((prev, curr) => {
           return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
         });
-        return closest.us;
+        return closest;
       }
 
       function updateSize() {
         sizer.style.width = `${diameter}px`;
         sizer.style.height = `${diameter}px`;
         const mm = diameter.toFixed(1);
-        const size = getSizeFromDiameter(mm);
-        output.textContent = `Diameter: ${mm} mm → US Size ${size}`;
+        const size = getSizeFromDiameter(parseFloat(mm));
+        output.textContent = `Diameter: ${mm} mm → US: ${size.us}, UK: ${size.uk}, EU: ${size.eu}`;
       }
 
       sizer.addEventListener("pointerdown", (e) => {
