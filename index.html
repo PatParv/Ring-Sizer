@@ -1,218 +1,298 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- lock mobile zoom to avoid accidental page zoom while resizing -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ring Size Finder</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #f9f9f9;
-      margin: 0;
-      padding: 2rem;
+      touch-action: manipulation;   /* reduce double-tap zoom */
+      overscroll-behavior: none;    /* nicer scrolling on mobile */
       text-align: center;
     }
-    .hidden { display: none; }
-    .sizer-wrapper {
-      position: relative;
-      max-width: 400px;
-      height: 300px;
+
+    .step {
+      max-width: 420px;
       margin: 2rem auto;
       background: #fff6f6;
-      text-align: center;
-      border-radius: 8px;
-      border: 1px solid red;
+      padding: 1.5rem;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     }
-    #sizerCircle {
-      width: 100px;
-      height: 100px;
-      border: 3px dashed black;
-      border-radius: 50%;
-      background: lightgray;
+
+    .area {
+      position: relative;
+      height: 300px;
+      background: #fff;
+      border: 1px solid #ffb3b3;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+
+    #creditCard {
+      /* exact ISO/IEC 7810 ID-1 size by default */
+      width: 85.6mm;
+      height: 53.98mm;
+      background: #e6e6e6;
+      border: 2px solid #111;
+      border-radius: 6mm;
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      touch-action: none;
-      cursor: grab;
-      z-index: 10;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
     }
-    #ringSizeOutput {
+
+    #sizerCircle {
+      width: 100px;
+      height: 100px;
+      border: 3px dotted #000;
+      border-radius: 50%;
+      background: rgba(211,211,211,0.5); /* light gray */
       position: absolute;
-      bottom: 10px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      font-size: 1rem;
-      font-weight: bold;
-      color: #111;
+      transform: translate(-50%, -50%);
+      touch-action: none; /* allow pointer events without browser gestures */
+      cursor: grab;
+      box-shadow: 0 0 6px rgba(0,0,0,0.15);
     }
-    .drag-hint {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      font-size: 0.8rem;
-      color: #999;
+
+    .hint {
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
     }
-    .size-details {
-      margin-top: 2rem;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 1rem;
-      font-weight: bold;
-    }
-    button {
-      margin: 0.25rem;
+
+    .controls { margin-top: 0.75rem; }
+
+    .btn {
       padding: 0.5rem 1rem;
       font-size: 1rem;
+      margin: 0 0.35rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #f3f3f3;
+      cursor: pointer;
+    }
+    .btn:hover { background: #e9e9e9; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 0 10px;
+      font-weight: 700;
+    }
+
+    .diameter-line {
+      margin-top: 10px;
+      font-weight: 700;
     }
   </style>
 </head>
 <body>
 
-<div id="calibrationStep">
-  <h2>Step 1: Calibrate Your Screen</h2>
-  <p>Match the card outline to a physical credit card. Use ± buttons to adjust if needed.</p>
+  <!-- STEP 1: CALIBRATION -->
+  <section class="step" id="step1">
+    <h2>Step 1: Calibrate Your Screen</h2>
+    <p>Match the rectangle to a real credit card (8.56 cm × 5.398 cm). Use ± for fine tuning.</p>
 
-  <div style="position: relative; width: 100%; max-width: 400px; margin: 2rem auto;">
-    <div id="cardOutline" style="
-      width: 85.6mm;
-      height: 53.98mm;
-      border: 2px solid #000;
-      border-radius: 6px;
-      margin: 0 auto;
-      background: repeating-linear-gradient(45deg, #eee, #eee 5px, #fff 5px, #fff 10px);
-    "></div>
-    <div style="margin-top: 1rem;">
-      <button onclick="adjustCardSize(-1)">−</button>
-      <button onclick="adjustCardSize(1)">+</button>
+    <div class="area">
+      <div id="creditCard" aria-label="Credit card outline for calibration"></div>
     </div>
-    <div style="margin-top: 1rem; font-size: 0.9rem;">Width: <span id="cardWidthValue">85.6</span> mm</div>
-  </div>
 
-  <button onclick="goToStep2()">Next</button>
-  <button onclick="skipCalibration()">Skip Calibration</button>
-</div>
+    <div class="controls">
+      <button class="btn" id="cardSmaller">− 0.5 mm</button>
+      <button class="btn" id="cardLarger">+ 0.5 mm</button>
+    </div>
+    <div class="hint">
+      Width: <span id="cardWidthReadout">85.6</span> mm &nbsp;•&nbsp;
+      Height: <span id="cardHeightReadout">53.98</span> mm
+    </div>
 
-<div id="sizerStep" class="hidden">
-  <h2>Step 2: Measure Your Ring Size</h2>
-  <p>Place a ring directly on the screen. Adjust the circle to match the <strong>inner edge</strong> of the ring.</p>
+    <div class="controls" style="margin-top:1rem">
+      <button class="btn" id="skipBtn">Skip calibration</button>
+      <button class="btn" id="nextBtn">Next</button>
+    </div>
+  </section>
 
-  <div class="sizer-wrapper">
-    <div class="drag-hint">← drag →</div>
-    <div id="sizerCircle"></div>
-    <div id="ringSizeOutput">Adjust the circle to find your size</div>
-  </div>
+  <!-- STEP 2: RING SIZER -->
+  <section class="step" id="step2" style="display:none;">
+    <h2>Step 2: Measure Your Ring Size</h2>
+    <p>Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
 
-  <div style="margin-top: 1rem;">
-    <button onclick="resizeCircle(-1)">−</button>
-    <button onclick="resizeCircle(1)">+</button>
-  </div>
+    <div class="area">
+      <div id="sizerCircle"></div>
+    </div>
 
-  <div class="size-details">
-    <div id="usSize">US: –</div>
-    <div id="ukSize">UK: –</div>
-    <div id="euSize">EU: –</div>
-  </div>
-</div>
+    <div class="controls">
+      <button class="btn" id="circleSmaller">−</button>
+      <button class="btn" id="circleLarger">+</button>
+    </div>
 
-<script>
-  let cardWidth = 85.6;
-  let diameter = 100;
-  let isDragging = false;
-  let startX;
-  let scale = 1;
+    <div class="diameter-line" id="diameterOut">Diameter: — mm</div>
 
-  const sizeChart = [
-    { mm: 14.1, us: "3", uk: "F", eu: "44" }, { mm: 14.5, us: "3.5", uk: "G", eu: "45" },
-    { mm: 14.9, us: "4", uk: "H", eu: "46.5" }, { mm: 15.3, us: "4.5", uk: "I", eu: "48" },
-    { mm: 15.7, us: "5", uk: "J", eu: "49" }, { mm: 16.1, us: "5.5", uk: "K", eu: "50.5" },
-    { mm: 16.5, us: "6", uk: "L", eu: "51.5" }, { mm: 16.9, us: "6.5", uk: "M", eu: "53" },
-    { mm: 17.3, us: "7", uk: "N", eu: "54.5" }, { mm: 17.7, us: "7.5", uk: "O", eu: "56" },
-    { mm: 18.1, us: "8", uk: "P", eu: "57" }, { mm: 18.5, us: "8.5", uk: "Q", eu: "58.5" },
-    { mm: 18.9, us: "9", uk: "R", eu: "60" }, { mm: 19.4, us: "9.5", uk: "S", eu: "61.5" },
-    { mm: 19.8, us: "10", uk: "T", eu: "62.5" }, { mm: 20.2, us: "10.5", uk: "U", eu: "64" },
-    { mm: 20.6, us: "11", uk: "V", eu: "65" }, { mm: 21.0, us: "11.5", uk: "W", eu: "66.5" },
-    { mm: 21.4, us: "12", uk: "X", eu: "68" }, { mm: 21.8, us: "12.5", uk: "Y", eu: "69" },
-    { mm: 22.2, us: "13", uk: "Z", eu: "70.5" }
-  ];
+    <div class="row">
+      <div id="usOut">US: —</div>
+      <div id="ukOut">UK: —</div>
+      <div id="euOut">EU: —</div>
+    </div>
+  </section>
 
-  function getSizeFromDiameter(mm) {
-    return sizeChart.reduce((prev, curr) => {
-      return Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev;
+  <script>
+    /***********************
+     * Calibration state
+     ***********************/
+    const CARD_ASPECT = 53.98 / 85.6; // fixed aspect ratio (H/W)
+    let cardWidthMM = 85.6;           // editable in 0.5 mm steps
+    let pxPerMM = null;               // computed after calibration
+    const DEFAULT_PX_PER_MM = 96 / 25.4; // ~3.78 px/mm fallback if user skips
+
+    const cardEl = document.getElementById('creditCard');
+    const cardWReadout = document.getElementById('cardWidthReadout');
+    const cardHReadout = document.getElementById('cardHeightReadout');
+
+    function renderCard() {
+      cardEl.style.width  = cardWidthMM + 'mm';
+      cardEl.style.height = (cardWidthMM * CARD_ASPECT).toFixed(2) + 'mm';
+      cardWReadout.textContent = cardWidthMM.toFixed(1);
+      cardHReadout.textContent = (cardWidthMM * CARD_ASPECT).toFixed(2);
+    }
+
+    function adjustCard(deltaMM) {
+      cardWidthMM = Math.max(80, Math.min(92, cardWidthMM + deltaMM)); // sensible bounds
+      renderCard();
+    }
+
+    // Buttons for card
+    document.getElementById('cardSmaller').addEventListener('click', () => adjustCard(-0.5));
+    document.getElementById('cardLarger').addEventListener('click', () => adjustCard(+0.5));
+
+    // Next / Skip
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      // compute px/mm based on rendered element size on the user's device
+      const renderedPx = cardEl.getBoundingClientRect().width; // px on screen
+      pxPerMM = renderedPx / cardWidthMM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
     });
-  }
 
-  function updateSize() {
-    const sizer = document.getElementById("sizerCircle");
-    const output = document.getElementById("ringSizeOutput");
-    const us = document.getElementById("usSize");
-    const uk = document.getElementById("ukSize");
-    const eu = document.getElementById("euSize");
+    document.getElementById('skipBtn').addEventListener('click', () => {
+      pxPerMM = DEFAULT_PX_PER_MM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
 
-    sizer.style.width = `${diameter}px`;
-    sizer.style.height = `${diameter}px`;
+    function goStep(n) {
+      document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
+      document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
+      if (n === 2) updateSizer();
+    }
 
-    const mm = (diameter / scale).toFixed(1);
-    const size = getSizeFromDiameter(parseFloat(mm));
-    output.textContent = `Diameter: ${mm} mm`;
-    us.textContent = `US: ${size.us}`;
-    uk.textContent = `UK: ${size.uk}`;
-    eu.textContent = `EU: ${size.eu}`;
-  }
+    renderCard(); // initial render
 
-  function resizeCircle(change) {
-    diameter += change;
-    diameter = Math.max(30, Math.min(250, diameter));
-    updateSize();
-  }
 
-  function adjustCardSize(change) {
-    cardWidth = Math.max(80, Math.min(90, cardWidth + change));
-    const card = document.getElementById("cardOutline");
-    const widthDisplay = document.getElementById("cardWidthValue");
-    card.style.width = `${cardWidth}mm`;
-    widthDisplay.textContent = cardWidth.toFixed(1);
-  }
+    /***********************
+     * Ring sizer state
+     ***********************/
+    const sizerEl = document.getElementById('sizerCircle');
+    const diameterOut = document.getElementById('diameterOut');
+    const usOut = document.getElementById('usOut');
+    const ukOut = document.getElementById('ukOut');
+    const euOut = document.getElementById('euOut');
 
-  function goToStep2() {
-    scale = diameter / cardWidth;
-    document.getElementById("calibrationStep").classList.add("hidden");
-    document.getElementById("sizerStep").classList.remove("hidden");
-    updateSize();
-  }
+    let diameterPx = 100;
+    let dragging = false;
+    let startX = 0;
 
-  function skipCalibration() {
-    scale = window.devicePixelRatio || 1;
-    document.getElementById("calibrationStep").classList.add("hidden");
-    document.getElementById("sizerStep").classList.remove("hidden");
-    updateSize();
-  }
+    // Lookup table (diameter mm to size systems)
+    const sizeChart = [
+      { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
+      { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
+      { mm: 14.9, us: "4",   uk: "H",  eu: "46.5" },
+      { mm: 15.3, us: "4.5", uk: "I",  eu: "48"   },
+      { mm: 15.7, us: "5",   uk: "J",  eu: "49"   },
+      { mm: 16.1, us: "5.5", uk: "K",  eu: "50.5" },
+      { mm: 16.5, us: "6",   uk: "L",  eu: "51.5" },
+      { mm: 16.9, us: "6.5", uk: "M",  eu: "53"   },
+      { mm: 17.3, us: "7",   uk: "N",  eu: "54.5" },
+      { mm: 17.7, us: "7.5", uk: "O",  eu: "56"   },
+      { mm: 18.1, us: "8",   uk: "P",  eu: "57"   },
+      { mm: 18.5, us: "8.5", uk: "Q",  eu: "58.5" },
+      { mm: 18.9, us: "9",   uk: "R",  eu: "60"   },
+      { mm: 19.4, us: "9.5", uk: "S",  eu: "61"   },
+      { mm: 19.8, us: "10",  uk: "T",  eu: "62.5" },
+      { mm: 20.2, us: "10.5",uk: "U",  eu: "63.5" },
+      { mm: 20.6, us: "11",  uk: "V",  eu: "65"   },
+      { mm: 21.0, us: "11.5",uk: "W",  eu: "66"   },
+      { mm: 21.4, us: "12",  uk: "X",  eu: "67.5" },
+      { mm: 21.8, us: "12.5",uk: "Y",  eu: "69"   },
+      { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
+    ];
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const sizer = document.getElementById("sizerCircle");
+    function nearestSize(mm) {
+      return sizeChart.reduce((prev, curr) =>
+        Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
+      );
+    }
 
-    sizer.addEventListener("pointerdown", (e) => {
-      isDragging = true;
+    function updateSizer() {
+      // if user jumped straight here and localStorage had a value, use it
+      if (!pxPerMM) {
+        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
+        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
+      }
+
+      sizerEl.style.width  = diameterPx + 'px';
+      sizerEl.style.height = diameterPx + 'px';
+
+      const diameterMM = (diameterPx / pxPerMM).toFixed(1);
+      const match = nearestSize(parseFloat(diameterMM));
+
+      diameterOut.textContent = `Diameter: ${diameterMM} mm`;
+      usOut.textContent = `US: ${match.us}`;
+      ukOut.textContent = `UK: ${match.uk}`;
+      euOut.textContent = `EU: ${match.eu}`;
+    }
+
+    // Drag to resize
+    sizerEl.addEventListener('pointerdown', (e) => {
+      dragging = true;
       startX = e.clientX;
-      sizer.setPointerCapture(e.pointerId);
+      sizerEl.setPointerCapture(e.pointerId);
     });
-
-    sizer.addEventListener("pointermove", (e) => {
-      if (!isDragging) return;
+    sizerEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
       const dx = e.clientX - startX;
-      diameter += dx;
-      diameter = Math.max(30, Math.min(250, diameter));
+      diameterPx = Math.max(30, Math.min(320, diameterPx + dx));
       startX = e.clientX;
-      updateSize();
+      updateSizer();
+    });
+    sizerEl.addEventListener('pointerup', () => { dragging = false; });
+
+    // Buttons for circle
+    document.getElementById('circleSmaller').addEventListener('click', () => {
+      diameterPx = Math.max(30, diameterPx - 1);
+      updateSizer();
+    });
+    document.getElementById('circleLarger').addEventListener('click', () => {
+      diameterPx = Math.min(320, diameterPx + 1);
+      updateSizer();
     });
 
-    sizer.addEventListener("pointerup", () => {
-      isDragging = false;
-    });
-  });
-</script>
+    // Initial UI state (step 1 shows by default)
+    // If you want to auto-continue when pxPerMM is stored:
+    // const stored = parseFloat(localStorage.getItem('pxPerMM')||'0');
+    // if (stored > 0) { pxPerMM = stored; goStep(2); } else { goStep(1); }
+  </script>
 </body>
 </html>
