@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Prevent accidental pinch zoom while resizing -->
+  <!-- Lock zoom on the whole page -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ring Size Finder</title>
   <style>
@@ -12,39 +12,41 @@
       height: 100%;
       margin: 0;
       padding: 0;
+      overflow: hidden;                 /* no page scroll */
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #2e555a;     /* page background */
+      background: #2e555a;
       color: #111;
       touch-action: manipulation;
       overscroll-behavior: none;
     }
 
     .frame {
-      min-height: 100vh;
+      min-height: 100dvh;               /* fill viewport, avoid mobile bounce */
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
+      padding: 8px;                     /* tiny edge padding to prevent clipping */
     }
 
     .step {
       width: min(98vw, 1200px);
       background: #fff6f6;
-      padding: 14px 16px 18px;
+      padding: 12px 14px 14px;
       border: 1px solid #ddd;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
-    .title { margin: 0 0 .5rem; text-align: center; }
-    .subtitle { margin: .25rem 0 .8rem; text-align: center; }
 
-    /* Shared stage box (same size in both steps) */
+    .title { margin: 0 0 .4rem; text-align: center; }
+    .subtitle { margin: .2rem 0 .6rem; text-align: center; }
+
+    /* Shared stage (white box) */
     .stage {
       position: relative;
       width: 100%;
       max-width: 1200px;
-      height: clamp(320px, 54vh, 520px);
-      margin: 8px auto 10px;
+      height: clamp(300px, 50vh, 500px);  /* card calibration height */
+      margin: 6px auto 8px;
       background: #fff;
       border: 1px solid #ffb3b3;
       border-radius: 12px;
@@ -53,13 +55,17 @@
       place-items: center;
     }
 
-    /* Buttons/controls */
+    /* Ring sizer white box: intentionally shorter to remove extra top/bottom space */
+    #sizerArea.stage {
+      height: clamp(240px, 40vh, 360px);
+    }
+
     .controls {
-      margin: .5rem 0 0;
+      margin: .45rem 0 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: .6rem;
+      gap: .5rem;
       flex-wrap: wrap;
     }
     .btn {
@@ -89,7 +95,7 @@
 
     /* Calibration shapes */
     #creditCard {
-      width: 380px; /* JS sets on load; aspect keeps height correct */
+      width: 380px;                      /* JS may override */
       aspect-ratio: 85.6 / 53.98;
       background: #e6e6e6;
       border: 2px solid #111;
@@ -98,8 +104,8 @@
       pointer-events: none;
     }
     #coinCircle {
-      width: 180px;
-      height: 180px;
+      width: 170px;                      /* visual start size; user adjusts */
+      height: 170px;
       border-radius: 50%;
       background: #e6e6e6;
       border: 2px solid #111;
@@ -114,20 +120,20 @@
       border: 3px dotted #000;
       border-radius: 50%;
       background: rgba(211,211,211,0.5);
-      position: relative; /* centered by grid parent */
+      position: relative;                /* centered by grid parent */
       touch-action: none;
       cursor: grab;
       box-shadow: 0 0 6px rgba(0,0,0,0.15);
     }
 
-    .diameter-line { margin-top: 6px; font-weight: 700; text-align: center; }
+    .diameter-line { margin-top: 4px; font-weight: 700; text-align: center; }
 
     /* Size cards */
     .sizes-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .size-card {
       background: #ffffff;
@@ -155,10 +161,11 @@
     @media (max-width: 520px) {
       .frame { padding: 0; }
       .step { width: 100vw; border-radius: 0; padding: 10px 10px 12px; }
-      .stage { width: 100%; max-width: none; height: clamp(340px, 62vh, 540px); margin: 6px 0 8px; }
-      .btn { min-width: 44px; padding: .6rem 1rem; font-size: 1.05rem; border-radius: 12px; }
-      .size-card { padding: 10px 8px; }
-      .size-card .value { font-size: 1.25rem; }
+      .stage { width: 100%; max-width: none; margin: 4px 0 6px; }
+      /* keep heights modest to avoid page scroll on phones */
+      .stage { height: clamp(280px, 48vh, 420px); }
+      #sizerArea.stage { height: clamp(220px, 38vh, 340px); }
+      .btn { min-width: 44px; padding: .55rem 1rem; font-size: 1.05rem; border-radius: 12px; }
 
       /* Hide the mode switch on mobile (coin-only UX) */
       .mode-switch { display: none; }
@@ -168,13 +175,13 @@
 <body>
   <main class="frame">
 
-    <!-- STEP 1: Calibration (mobile = coins; desktop = card by default) -->
+    <!-- STEP 1: Calibration -->
     <section class="step" id="step1">
       <h2 class="title">Step 1: Calibrate Your Screen</h2>
-      <p class="subtitle">Choose your method, then resize to match the real object for accurate sizing.</p>
+      <p class="subtitle">Choose your method, then resize to match the real object.</p>
 
-      <!-- Mode switch: visible on desktop; hidden on mobile via CSS -->
-      <div class="controls mode-switch" style="margin-bottom:.4rem">
+      <!-- Desktop mode switch (hidden on mobile) -->
+      <div class="controls mode-switch" style="margin-bottom:.35rem">
         <div class="segmented" role="tablist" aria-label="Calibration method">
           <button id="modeCoinBtn" class="active" role="tab" aria-selected="true">Coin</button>
           <button id="modeCardBtn" role="tab" aria-selected="false">Credit card</button>
@@ -183,12 +190,12 @@
 
       <!-- COIN MODE (mobile default) -->
       <div id="coinMode">
-        <div class="controls" style="margin-top:.2rem">
+        <div class="controls" style="margin-top:.15rem">
           <div class="segmented" aria-label="Coin type">
-            <button id="coinEURBtn" class="active">€1 (23.25 mm)</button>
-            <button id="coinUSBtn">US quarter (24.26 mm)</button>
-            <button id="coinUKBtn">UK £1 (22.5 mm)</button>
-            <button id="coinCADBtn">CAD quarter (23.88 mm)</button>
+            <button id="coinEURBtn" class="active">€1</button>
+            <button id="coinUSBtn">US quarter</button>
+            <button id="coinUKBtn">UK £1</button>
+            <button id="coinCADBtn">CAD quarter</button>
           </div>
         </div>
 
@@ -201,15 +208,15 @@
           <button class="btn" id="coinLarger">+</button>
         </div>
 
-        <div class="controls" style="margin-top:.6rem">
+        <div class="controls" style="margin-top:.45rem">
           <button class="btn" id="skipBtn1">Skip calibration</button>
           <button class="btn" id="nextBtn1">Next</button>
         </div>
       </div>
 
-      <!-- CARD MODE (desktop default) -->
+      <!-- CARD MODE (desktop default; unchanged) -->
       <div id="cardMode" style="display:none">
-        <p class="subtitle" style="margin-top:.4rem">Resize to match the long edge of a credit card (85.6 mm).</p>
+        <p class="subtitle" style="margin-top:.25rem">Match the long edge of a credit card.</p>
         <div class="stage" id="cardArea">
           <div id="creditCard"></div>
         </div>
@@ -217,7 +224,7 @@
           <button class="btn" id="cardSmaller">−</button>
           <button class="btn" id="cardLarger">+</button>
         </div>
-        <div class="controls" style="margin-top:.6rem">
+        <div class="controls" style="margin-top:.45rem">
           <button class="btn" id="skipBtn2">Skip calibration</button>
           <button class="btn" id="nextBtn2">Next</button>
         </div>
@@ -233,7 +240,7 @@
         <div id="sizerCircle"></div>
       </div>
 
-      <div class="controls" style="margin-top:.25rem">
+      <div class="controls" style="margin-top:.2rem">
         <button class="btn" id="circleSmaller">−</button>
         <button class="btn" id="circleLarger">+</button>
         <button class="btn" id="reset18">Reset to 18 mm</button>
@@ -251,7 +258,7 @@
   </main>
 
   <script>
-    // ===== Config / helpers =====
+    // ===== Basics =====
     const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
     const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
 
@@ -263,7 +270,7 @@
 
     let pxPerMM = null;
 
-    // ===== Mode switching (Coin vs Card) =====
+    // Mode switching (desktop can toggle; mobile defaults to coin)
     const modeCoinBtn = document.getElementById('modeCoinBtn');
     const modeCardBtn = document.getElementById('modeCardBtn');
     const coinMode = document.getElementById('coinMode');
@@ -284,7 +291,6 @@
     // Desktop default: card; Mobile default: coin
     setMode(IS_MOBILE ? 'coin' : 'card');
 
-    // Keep desktop switch behavior (unchanged)
     if (modeCoinBtn && modeCardBtn) {
       modeCoinBtn.addEventListener('click', () => setMode('coin'));
       modeCardBtn.addEventListener('click', () => setMode('card'));
@@ -300,13 +306,13 @@
     const coinSmaller = document.getElementById('coinSmaller');
     const coinLarger  = document.getElementById('coinLarger');
 
-    let coinTargetMM = COIN_EUR_1; // default to €1
-    let coinPx = IS_MOBILE ? 160 : 180; // initial visual size
+    let coinTargetMM = COIN_EUR_1;                // default to €1
+    let coinPx = IS_MOBILE ? 150 : 170;           // start smaller on phones
 
     function updateCoinUI() {
       coinEURBtn.classList.toggle('active', coinTargetMM === COIN_EUR_1);
-      coinUSBtn.classList.toggle('active',  coinTargetMM === COIN_US_QUARTER);
-      coinUKBtn.classList.toggle('active',  coinTargetMM === COIN_UK_1GBP);
+      coinUSBtn .classList.toggle('active', coinTargetMM === COIN_US_QUARTER);
+      coinUKBtn .classList.toggle('active', coinTargetMM === COIN_UK_1GBP);
       coinCADBtn.classList.toggle('active', coinTargetMM === COIN_CAD_QUART);
       coinCircle.style.width = coinPx + 'px';
       coinCircle.style.height = coinPx + 'px';
@@ -318,7 +324,7 @@
     coinCADBtn.addEventListener('click', () => { coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
 
     coinSmaller.addEventListener('click', () => {
-      coinPx = Math.max(60, coinPx - 6); // 6px steps
+      coinPx = Math.max(60, coinPx - 6);
       updateCoinUI();
     });
     coinLarger.addEventListener('click', () => {
@@ -326,7 +332,6 @@
       updateCoinUI();
     });
 
-    // Compute px/mm from the coin match
     document.getElementById('nextBtn1').addEventListener('click', () => {
       const renderedPx = coinCircle.getBoundingClientRect().width;
       pxPerMM = renderedPx / coinTargetMM;
@@ -339,7 +344,7 @@
       goStep(2);
     });
 
-    // ===== Card calibration (desktop flow unchanged) =====
+    // ===== Card calibration (desktop) =====
     const creditCard = document.getElementById('creditCard');
     let cardWidthPx = IS_MOBILE ? 320 : 380;
 
@@ -357,7 +362,7 @@
 
     document.getElementById('nextBtn2').addEventListener('click', () => {
       const renderedPx = creditCard.getBoundingClientRect().width; // long edge
-      pxPerMM = renderedPx / 85.6; // 85.6 mm
+      pxPerMM = renderedPx / 85.6;
       localStorage.setItem('pxPerMM', String(pxPerMM));
       goStep(2);
     });
@@ -414,7 +419,7 @@
 
     function nearestSize(mm) {
       return sizeChart.reduce((prev, curr) =>
-        Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
+        Math.abs(curr.mm - mm) < Math.abs(prev.mm - prev.mm) ? curr : prev
       );
     }
 
@@ -436,7 +441,9 @@
       sizerEl.style.height = diameterPx + 'px';
 
       const diameterMM = (diameterPx / pxPerMM).toFixed(1);
-      const match = nearestSize(parseFloat(diameterMM));
+      const match = sizeChart.reduce((prev, curr) =>
+        Math.abs(curr.mm - diameterMM) < Math.abs(prev.mm - diameterMM) ? curr : prev
+      );
 
       diameterOut.textContent = `Diameter: ${diameterMM} mm`;
       usValue.textContent = match.us;
@@ -473,8 +480,66 @@
       updateSizer();
     });
 
-    // Initialize coin UI and ensure correct default mode per device
+    // Init coin UI + default mode
     updateCoinUI();
+
+    function updateCoinUI() {
+      document.getElementById('coinEURBtn').classList.toggle('active', true);
+      document.getElementById('coinUSBtn').classList.toggle('active', false);
+      document.getElementById('coinUKBtn').classList.toggle('active', false);
+      document.getElementById('coinCADBtn').classList.toggle('active', false);
+      // (sizes updated dynamically by coin selection handlers)
+    }
+
+    // Coin click handlers to manage 'active' state & target mm
+    document.getElementById('coinEURBtn').addEventListener('click', () => {
+      setCoinTarget(COIN_EUR_1, 'coinEURBtn');
+    });
+    document.getElementById('coinUSBtn').addEventListener('click', () => {
+      setCoinTarget(COIN_US_QUARTER, 'coinUSBtn');
+    });
+    document.getElementById('coinUKBtn').addEventListener('click', () => {
+      setCoinTarget(COIN_UK_1GBP, 'coinUKBtn');
+    });
+    document.getElementById('coinCADBtn').addEventListener('click', () => {
+      setCoinTarget(COIN_CAD_QUART, 'coinCADBtn');
+    });
+
+    let coinTargetMM = COIN_EUR_1;
+    let coinPx = IS_MOBILE ? 150 : 170;
+
+    function setCoinTarget(mm, activeId) {
+      coinTargetMM = mm;
+      ['coinEURBtn','coinUSBtn','coinUKBtn','coinCADBtn'].forEach(id => {
+        document.getElementById(id).classList.toggle('active', id === activeId);
+      });
+      coinCircle.style.width = coinPx + 'px';
+      coinCircle.style.height = coinPx + 'px';
+    }
+
+    // +/- for coin
+    document.getElementById('coinSmaller').addEventListener('click', () => {
+      coinPx = Math.max(60, coinPx - 6);
+      coinCircle.style.width = coinPx + 'px';
+      coinCircle.style.height = coinPx + 'px';
+    });
+    document.getElementById('coinLarger').addEventListener('click', () => {
+      coinPx = Math.min(1000, coinPx + 6);
+      coinCircle.style.width = coinPx + 'px';
+      coinCircle.style.height = coinPx + 'px';
+    });
+
+    document.getElementById('nextBtn1').addEventListener('click', () => {
+      const renderedPx = coinCircle.getBoundingClientRect().width;
+      pxPerMM = renderedPx / coinTargetMM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
+    document.getElementById('skipBtn1').addEventListener('click', () => {
+      pxPerMM = DEFAULT_PX_PER_MM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
   </script>
 </body>
 </html>
