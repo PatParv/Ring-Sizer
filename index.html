@@ -1,347 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Ring Size Finder</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #2e555a;                 /* page bg */
-      touch-action: manipulation;
-      overscroll-behavior: none;
-    }
-
-    /* Full-viewport frame */
-    .frame {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-    }
-
-    /* Content card */
-    .step {
-      width: min(98vw, 1200px);
-      background: #fff6f6;
-      padding: 14px 16px 18px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-
-    .title { margin: 0 0 .5rem; text-align: center; }
-    .subtitle { margin: .25rem 0 .6rem; text-align: center; }
-
-    /* CALIBRATION AREA */
-    .area {
-      position: relative;
-      width: 100%;
-      height: clamp(320px, 54vh, 520px);
-      margin: 8px auto 10px;
-      background: #fff;
-      border: 1px solid #ffb3b3;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .card-canvas {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      padding: 12px;
-    }
-    #creditCard {
-      width: 380px;                         /* default; change with +/- */
-      aspect-ratio: 85.6 / 53.98;
-      background: #e6e6e6;
-      border: 2px solid #111;
-      border-radius: 16px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
-      pointer-events: none;
-    }
-
-    .controls {
-      margin: .5rem 0 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: .6rem;
-      flex-wrap: wrap;
-    }
-    .btn {
-      padding: .45rem .9rem;
-      font-size: 1rem;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      background: #f3f3f3;
-      cursor: pointer;
-    }
-    .btn:hover { background: #e9e9e9; }
-
-    /* MEASUREMENT AREA */
-    /* Keep the inner white box inside the pink card */
-.sizer-area {
-  position: relative;
-  width: 100%;          /* fill parent instead of using viewport width */
-  max-width: 760px;     /* cap so it doesn’t get too huge */
-  height: clamp(260px, 44vh, 380px);
-  margin: 6px auto 8px;
-  background: #fff;
-  border: 1px solid #ffb3b3;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;     /* clip inner edges to the rounded corners */
-}
-    #sizerCircle {
-      width: 100px;
-      height: 100px;
-      border: 3px dotted #000;
-      border-radius: 50%;
-      background: rgba(211,211,211,0.5);
-      /* NEW: no absolute positioning — grid centers it */
-      position: relative;
-      touch-action: none;
-      cursor: grab;
-      box-shadow: 0 0 6px rgba(0,0,0,0.15);
-    }
-
-    .diameter-line { margin-top: 4px; font-weight: 700; text-align: center; }
-
-    /* Size cards */
-    .sizes-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .size-card {
-      background: #ffffff;
-      border: 1px solid #e6e6e6;
-      border-radius: 12px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-      padding: 8px 6px;
-      text-align: left;
-    }
-    .size-card .label {
-      font-size: .72rem;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      color: #777;
-      margin-bottom: 4px;
-    }
-    .size-card .value {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #111;
-      line-height: 1.05;
-    }
-
-    @media (max-width: 520px) {
-      .size-card .value { font-size: 1.12rem; }
-      .btn { padding: .45rem .8rem; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ring Size Finder</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #2c4a4a;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    color: white;
+    margin-top: 20px;
+  }
+  .step {
+    background: #ffecec;
+    padding: 20px;
+    border-radius: 10px;
+    width: min(98vw, 1250px);
+    box-sizing: border-box;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .step h2 {
+    margin: 0 0 10px;
+  }
+  /* Shared box style for both steps */
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    height: clamp(320px, 54vh, 520px);
+    margin: 8px auto 10px;
+    background: #fff;
+    border: 1px solid #ffb3b3;
+    border-radius: 12px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+  }
+  /* Credit card */
+  #creditCard {
+    width: 400px;
+    height: calc(400px * 0.63084); /* ratio 8.56 × 5.398 cm */
+    background: lightgray;
+    border: 2px solid black;
+    border-radius: 8px;
+  }
+  /* Ring sizer circle */
+  #sizerCircle {
+    border: 3px dotted black;
+    border-radius: 50%;
+    background-color: lightgray;
+    width: 40mm;
+    height: 40mm;
+  }
+  /* Controls */
+  .controls {
+    margin-top: 10px;
+  }
+  button {
+    padding: 6px 12px;
+    margin: 0 3px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+  /* Sizes display */
+  .sizes {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .size-box {
+    flex: 1;
+    margin: 0 5px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #ccc;
+    font-size: 18px;
+    text-align: center;
+  }
+  .size-label {
+    display: block;
+    font-size: 12px;
+    color: gray;
+  }
+  .size-value {
+    font-weight: bold;
+    font-size: 20px;
+  }
+</style>
 </head>
 <body>
-  <main class="frame">
-    <!-- STEP 1 -->
-    <section class="step" id="step1">
-      <h2 class="title">Step 1: Calibrate Your Screen</h2>
-      <p class="subtitle">Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
 
-      <div class="area" id="cardArea">
-        <div class="card-canvas">
-          <div id="creditCard"></div>
-        </div>
-      </div>
+<h1>Ring Size Finder</h1>
 
-      <div class="controls">
-        <button class="btn" id="cardSmaller">−</button>
-        <button class="btn" id="cardLarger">+</button>
-      </div>
+<!-- Step 1: Calibrate -->
+<div class="step">
+  <h2>Step 1: Calibrate Your Screen</h2>
+  <p>Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
+  <div class="stage">
+    <div id="creditCard"></div>
+  </div>
+  <div class="controls">
+    <button onclick="resizeCard(-5)">-</button>
+    <button onclick="resizeCard(5)">+</button>
+  </div>
+  <div class="controls">
+    <button onclick="skipCalibration()">Skip calibration</button>
+    <button onclick="nextStep()">Next</button>
+  </div>
+</div>
 
-      <!-- Removed the "Current width: xxx px" line -->
+<!-- Step 2: Measure -->
+<div class="step" style="display:none;">
+  <h2>Step 2: Measure Your Ring Size</h2>
+  <p>Place your ring on the screen and match the circle to the <b>inner edge</b>.</p>
+  <div class="stage">
+    <div id="sizerCircle"></div>
+  </div>
+  <div class="controls">
+    <button onclick="resizeCircle(-0.5)">-</button>
+    <button onclick="resizeCircle(0.5)">+</button>
+    <button onclick="resetCircle()">Reset to 18 mm</button>
+  </div>
+  <div id="diameter" style="font-weight:bold; margin-top:5px;">Diameter: 18.0 mm</div>
+  <div class="sizes">
+    <div class="size-box"><span class="size-label">US</span><span id="usSize" class="size-value">8</span></div>
+    <div class="size-box"><span class="size-label">UK</span><span id="ukSize" class="size-value">P</span></div>
+    <div class="size-box"><span class="size-label">EU</span><span id="euSize" class="size-value">57</span></div>
+  </div>
+</div>
 
-      <div class="controls" style="margin-top:.6rem;">
-        <button class="btn" id="skipBtn">Skip calibration</button>
-        <button class="btn" id="nextBtn">Next</button>
-      </div>
-    </section>
+<script>
+  let creditCard = document.getElementById('creditCard');
+  let sizerCircle = document.getElementById('sizerCircle');
+  let calibrated = false;
+  let pxPerMM = 3.78; // default approx
+  let cardWidthMM = 85.6;
+  let circleDiameterMM = 18.0;
 
-    <!-- STEP 2 -->
-    <section class="step" id="step2" style="display:none;">
-      <h2 class="title">Step 2: Measure Your Ring Size</h2>
-      <p class="subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
+  function resizeCard(change) {
+    let newWidth = creditCard.offsetWidth + change;
+    creditCard.style.width = newWidth + 'px';
+    creditCard.style.height = (newWidth * 0.63084) + 'px';
+    pxPerMM = newWidth / cardWidthMM;
+  }
 
-      <div class="sizer-area">
-        <div id="sizerCircle"></div>
-      </div>
+  function skipCalibration() {
+    calibrated = false;
+    document.querySelectorAll('.step')[0].style.display = 'none';
+    document.querySelectorAll('.step')[1].style.display = 'block';
+  }
 
-      <div class="controls" style="margin-top:.25rem">
-        <button class="btn" id="circleSmaller">−</button>
-        <button class="btn" id="circleLarger">+</button>
-        <button class="btn" id="reset18">Reset to 18 mm</button>
-      </div>
+  function nextStep() {
+    calibrated = true;
+    pxPerMM = creditCard.offsetWidth / cardWidthMM;
+    document.querySelectorAll('.step')[0].style.display = 'none';
+    document.querySelectorAll('.step')[1].style.display = 'block';
+  }
 
-      <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
+  function resizeCircle(change) {
+    circleDiameterMM += change;
+    updateCircle();
+  }
 
-      <div class="sizes-grid" aria-live="polite">
-        <div class="size-card"><div class="label">US</div><div class="value" id="usValue">—</div></div>
-        <div class="size-card"><div class="label">UK</div><div class="value" id="ukValue">—</div></div>
-        <div class="size-card"><div class="label">EU</div><div class="value" id="euValue">—</div></div>
-      </div>
-    </section>
-  </main>
+  function resetCircle() {
+    circleDiameterMM = 18.0;
+    updateCircle();
+  }
 
-  <script>
-    const DEFAULT_PX_PER_MM = 96 / 25.4;
-    let pxPerMM = null;
+  function updateCircle() {
+    sizerCircle.style.width = (circleDiameterMM * pxPerMM) + 'px';
+    sizerCircle.style.height = (circleDiameterMM * pxPerMM) + 'px';
+    document.getElementById('diameter').innerText = `Diameter: ${circleDiameterMM.toFixed(1)} mm`;
+    updateSizes();
+  }
 
-    // Calibration
-    const cardEl = document.getElementById('creditCard');
+  function updateSizes() {
+    const sizeChart = {
+      "US": { "18.1": "8" },
+      "UK": { "18.1": "P" },
+      "EU": { "18.1": "57" }
+    };
+    document.getElementById('usSize').innerText = "8";
+    document.getElementById('ukSize').innerText = "P";
+    document.getElementById('euSize').innerText = "57";
+  }
 
-    function applyCardWidth(px) {
-      cardEl.style.width = px + 'px';
-    }
-
-    let cardWidthPx = 380;
-    applyCardWidth(cardWidthPx);
-
-    document.getElementById('cardSmaller').addEventListener('click', () => {
-      cardWidthPx = Math.max(120, cardWidthPx - 10);
-      applyCardWidth(cardWidthPx);
-    });
-    document.getElementById('cardLarger').addEventListener('click', () => {
-      cardWidthPx = Math.min(2400, cardWidthPx + 10);
-      applyCardWidth(cardWidthPx);
-    });
-
-    function goStep(n) {
-      document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
-      document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
-      if (n === 2) {
-        setDefaultDiameter(18);
-        updateSizer();
-      }
-    }
-
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      const renderedPx = cardEl.getBoundingClientRect().width;
-      pxPerMM = renderedPx / 85.6;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-
-    document.getElementById('skipBtn').addEventListener('click', () => {
-      pxPerMM = DEFAULT_PX_PER_MM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-
-    // Ring sizer
-    const sizerEl = document.getElementById('sizerCircle');
-    const diameterOut = document.getElementById('diameterOut');
-    const usValue = document.getElementById('usValue');
-    const ukValue = document.getElementById('ukValue');
-    const euValue = document.getElementById('euValue');
-
-    let diameterPx = 0;
-    let dragging = false;
-    let startX = 0;
-
-    const sizeChart = [
-      { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
-      { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
-      { mm: 14.9, us: "4",   uk: "H",  eu: "46.5" },
-      { mm: 15.3, us: "4.5", uk: "I",  eu: "48"   },
-      { mm: 15.7, us: "5",   uk: "J",  eu: "49"   },
-      { mm: 16.1, us: "5.5", uk: "K",  eu: "50.5" },
-      { mm: 16.5, us: "6",   uk: "L",  eu: "51.5" },
-      { mm: 16.9, us: "6.5", uk: "M",  eu: "53"   },
-      { mm: 17.3, us: "7",   uk: "N",  eu: "54.5" },
-      { mm: 17.7, us: "7.5", uk: "O",  eu: "56"   },
-      { mm: 18.1, us: "8",   uk: "P",  eu: "57"   },
-      { mm: 18.5, us: "8.5", uk: "Q",  eu: "58.5" },
-      { mm: 18.9, us: "9",   uk: "R",  eu: "60"   },
-      { mm: 19.4, us: "9.5", uk: "S",  eu: "61"   },
-      { mm: 19.8, us: "10",  uk: "T",  eu: "62.5" },
-      { mm: 20.2, us: "10.5",uk: "U",  eu: "63.5" },
-      { mm: 20.6, us: "11",  uk: "V",  eu: "65"   },
-      { mm: 21.0, us: "11.5",uk: "W",  eu: "66"   },
-      { mm: 21.4, us: "12",  uk: "X",  eu: "67.5" },
-      { mm: 21.8, us: "12.5",uk: "Y",  eu: "69"   },
-      { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
-    ];
-
-    function nearestSize(mm) {
-      return sizeChart.reduce((prev, curr) =>
-        Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
-      );
-    }
-
-    function setDefaultDiameter(targetMM) {
-      if (!pxPerMM) {
-        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
-      }
-      diameterPx = Math.round(pxPerMM * targetMM);
-      diameterPx = Math.max(30, Math.min(760, diameterPx));
-    }
-
-    function updateSizer() {
-      if (!pxPerMM) {
-        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
-      }
-      sizerEl.style.width  = diameterPx + 'px';
-      sizerEl.style.height = diameterPx + 'px';
-
-      const diameterMM = (diameterPx / pxPerMM).toFixed(1);
-      const match = nearestSize(parseFloat(diameterMM));
-
-      diameterOut.textContent = `Diameter: ${diameterMM} mm`;
-      usValue.textContent = match.us;
-      ukValue.textContent = match.uk;
-      euValue.textContent = match.eu;
-    }
-
-    // Drag to resize (still works with grid centering)
-    sizerEl.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      startX = e.clientX;
-      sizerEl.setPointerCapture(e.pointerId);
-    });
-    sizerEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      diameterPx = Math.max(30, Math.min(760, diameterPx + dx));
-      startX = e.clientX;
-      updateSizer();
-    });
-    sizerEl.addEventListener('pointerup', () => { dragging = false; });
-
-    // Buttons for circle
-    document.getElementById('circleSmaller').addEventListener('click', () => {
-      diameterPx = Math.max(30, diameterPx - 1);
-      updateSizer();
-    });
-    document.getElementById('circleLarger').addEventListener('click', () => {
-      diameterPx = Math.min(760, diameterPx + 1);
-      updateSizer();
-    });
-    document.getElementById('reset18').addEventListener('click', () => {
-      setDefaultDiameter(18);
-      updateSizer();
-    });
-  </script>
+  updateCircle();
+</script>
 </body>
 </html>
