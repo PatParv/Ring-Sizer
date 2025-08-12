@@ -94,7 +94,39 @@
     }
 
     .diameter-line { margin-top: 10px; font-weight: 700; }
-    .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: 10px; padding: 0 10px; font-weight: 700; }
+
+    /* Size cards */
+    .sizes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      padding: 0 10px;
+    }
+    .size-card {
+      background: #ffffff;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+      padding: 10px 8px;
+    }
+    .size-card .label {
+      font-size: .75rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 6px;
+    }
+    .size-card .value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #111;
+      line-height: 1.1;
+    }
+
+    @media (max-width: 520px) {
+      .size-card .value { font-size: 1.2rem; }
+    }
   </style>
 </head>
 <body>
@@ -138,12 +170,22 @@
       <button class="btn" id="reset18">Reset to 18 mm</button>
     </div>
 
-    <div class="diameter-line" id="diameterOut">Diameter: — mm</div>
+    <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
 
-    <div class="row">
-      <div id="usOut">US: —</div>
-      <div id="ukOut">UK: —</div>
-      <div id="euOut">EU: —</div>
+    <!-- Highlighted size cards -->
+    <div class="sizes-grid" aria-live="polite">
+      <div class="size-card">
+        <div class="label">US</div>
+        <div class="value" id="usValue">—</div>
+      </div>
+      <div class="size-card">
+        <div class="label">UK</div>
+        <div class="value" id="ukValue">—</div>
+      </div>
+      <div class="size-card">
+        <div class="label">EU</div>
+        <div class="value" id="euValue">—</div>
+      </div>
     </div>
   </section>
 
@@ -174,13 +216,11 @@
       applyCardWidth(cardWidthPx);
     });
 
-    // helpers
     function goStep(n) {
       document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
       document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
       if (n === 2) {
-        // ensure we start near a real size
-        setDefaultDiameter(18); // 18 mm default
+        setDefaultDiameter(18); // start near real ring size
         updateSizer();
       }
     }
@@ -203,11 +243,11 @@
      ***************/
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
-    const usOut = document.getElementById('usOut');
-    const ukOut = document.getElementById('ukOut');
-    const euOut = document.getElementById('euOut');
+    const usValue = document.getElementById('usValue');
+    const ukValue = document.getElementById('ukValue');
+    const euValue = document.getElementById('euValue');
 
-    let diameterPx = 0; // will be set from mm after calibration
+    let diameterPx = 0; // set from mm after calibration
     let dragging = false;
     let startX = 0;
 
@@ -243,7 +283,6 @@
     }
 
     function setDefaultDiameter(targetMM) {
-      // If calibration exists, use it; else load from localStorage or fallback
       if (!pxPerMM) {
         const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
         pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
@@ -264,9 +303,9 @@
       const match = nearestSize(parseFloat(diameterMM));
 
       diameterOut.textContent = `Diameter: ${diameterMM} mm`;
-      usOut.textContent = `US: ${match.us}`;
-      ukOut.textContent = `UK: ${match.uk}`;
-      euOut.textContent = `EU: ${match.eu}`;
+      usValue.textContent = match.us;
+      ukValue.textContent = match.uk;
+      euValue.textContent = match.eu;
     }
 
     // Drag to resize
