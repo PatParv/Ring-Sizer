@@ -2,48 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Lock zoom to avoid accidental page zoom while resizing -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ring Size Finder</title>
   <style>
+    * { box-sizing: border-box; }
+
     html, body {
+      height: 100%;
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #f0f4f5;
+      background: #2e555a;                 /* your teal page bg */
       touch-action: manipulation;
       overscroll-behavior: none;
-      text-align: center;
     }
 
-    /* Wider content card */
+    /* Full-viewport frame removes extra gray and centers the card */
+    .frame {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;                  /* vertical centering */
+      justify-content: center;              /* horizontal centering */
+      padding: 10px;                        /* tiny breathing room at edges */
+    }
+
+    /* Content card */
     .step {
-      max-width: 1100px;
-      margin: 1.5rem auto;
+      width: min(98vw, 1200px);
       background: #fff6f6;
-      padding: 1rem 1rem 1.25rem;
+      padding: 14px 16px 18px;              /* extra bottom so red border never clips */
       border: 1px solid #ddd;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
 
-    /* CALIBRATION AREA — fits on laptops without scroll */
+    .title { margin: 0 0 .5rem; text-align: center; }
+    .subtitle { margin: .25rem 0 .6rem; text-align: center; }
+
+    /* CALIBRATION AREA — bigger and guaranteed fully visible */
     .area {
       position: relative;
-      width: min(98vw, 1200px);
-      height: clamp(300px, 50vh, 480px);  /* a bit shorter so buttons show */
-      margin: 0.75rem auto 0.75rem;
+      width: 100%;                          /* use full card width */
+      height: clamp(320px, 54vh, 520px);    /* taller, scales with screen */
+      margin: 8px auto 10px;
       background: #fff;
-      border: 1px solid #ffb3b3;
+      border: 1px solid #ffb3b3;            /* red outline you want to see fully */
       border-radius: 12px;
-      overflow: hidden;                   /* hide any stray scrollbars */
+      overflow: hidden;                     /* no internal scrollbars */
     }
 
-    /* Canvas keeps the card centered */
     .card-canvas {
       position: relative;
-      min-width: 100%;
-      min-height: 100%;
+      width: 100%;
+      height: 100%;
       display: grid;
       place-items: center;
       padding: 12px;
@@ -51,16 +62,23 @@
 
     /* Calibration rectangle */
     #creditCard {
-      width: 380px;                       /* smaller default so it fits */
-      aspect-ratio: 85.6 / 53.98;         /* exact ID-1 aspect ratio */
+      width: 380px;                         /* good default; adjust with +/- */
+      aspect-ratio: 85.6 / 53.98;
       background: #e6e6e6;
       border: 2px solid #111;
-      border-radius: 12px;
+      border-radius: 16px;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
       pointer-events: none;
     }
 
-    .controls { margin: .5rem 0 0; display: flex; align-items: center; justify-content: center; gap: .6rem; flex-wrap: wrap; }
+    .controls {
+      margin: .5rem 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+      flex-wrap: wrap;
+    }
     .btn {
       padding: .45rem .9rem;
       font-size: 1rem;
@@ -70,14 +88,14 @@
       cursor: pointer;
     }
     .btn:hover { background: #e9e9e9; }
-    .hint { color: #777; font-size: .9rem; margin-top: .25rem; }
+    .hint { color: #777; font-size: .9rem; margin-top: .3rem; }
 
-    /* MEASUREMENT AREA — widened */
+    /* MEASUREMENT AREA — widened but shorter so everything fits */
     .sizer-area {
       position: relative;
       width: min(96vw, 760px);
-      height: clamp(260px, 46vh, 400px);
-      margin: 0.5rem auto 0.5rem;
+      height: clamp(260px, 44vh, 380px);
+      margin: 6px auto 8px;
       background: #fff;
       border: 1px solid #ffb3b3;
       border-radius: 12px;
@@ -98,7 +116,7 @@
       box-shadow: 0 0 6px rgba(0,0,0,0.15);
     }
 
-    .diameter-line { margin-top: 4px; font-weight: 700; }
+    .diameter-line { margin-top: 4px; font-weight: 700; text-align: center; }
 
     /* Size cards */
     .sizes-grid {
@@ -106,7 +124,6 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 8px;
-      padding: 0 8px;
     }
     .size-card {
       background: #ffffff;
@@ -130,78 +147,62 @@
     }
 
     @media (max-width: 520px) {
-      .size-card .value { font-size: 1.1rem; }
+      .size-card .value { font-size: 1.12rem; }
       .btn { padding: .45rem .8rem; }
     }
   </style>
 </head>
 <body>
+  <main class="frame">
+    <section class="step" id="step1">
+      <h2 class="title">Step 1: Calibrate Your Screen</h2>
+      <p class="subtitle">Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
 
-  <!-- STEP 1: CALIBRATION -->
-  <section class="step" id="step1">
-    <h2 style="margin:0 0 .5rem">Step 1: Calibrate Your Screen</h2>
-    <p style="margin:.25rem 0 .5rem">Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
-
-    <div class="area" id="cardArea">
-      <div class="card-canvas">
-        <div id="creditCard"></div>
+      <div class="area" id="cardArea">
+        <div class="card-canvas">
+          <div id="creditCard"></div>
+        </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <button class="btn" id="cardSmaller">−</button>
-      <button class="btn" id="cardLarger">+</button>
-    </div>
-
-    <div class="hint">
-      Current width: <span id="cardWidthPxReadout">380</span> px
-    </div>
-
-    <div class="controls" style="margin-top: .6rem;">
-      <button class="btn" id="skipBtn">Skip calibration</button>
-      <button class="btn" id="nextBtn">Next</button>
-    </div>
-  </section>
-
-  <!-- STEP 2: RING SIZER -->
-  <section class="step" id="step2" style="display:none;">
-    <h2 style="margin:0 0 .5rem">Step 2: Measure Your Ring Size</h2>
-    <p style="margin:.25rem 0 .5rem">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
-
-    <div class="sizer-area">
-      <div id="sizerCircle"></div>
-    </div>
-
-    <div class="controls" style="margin-top:.25rem">
-      <button class="btn" id="circleSmaller">−</button>
-      <button class="btn" id="circleLarger">+</button>
-      <button class="btn" id="reset18">Reset to 18 mm</button>
-    </div>
-
-    <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
-
-    <!-- Highlighted size cards -->
-    <div class="sizes-grid" aria-live="polite">
-      <div class="size-card">
-        <div class="label">US</div>
-        <div class="value" id="usValue">—</div>
+      <div class="controls">
+        <button class="btn" id="cardSmaller">−</button>
+        <button class="btn" id="cardLarger">+</button>
       </div>
-      <div class="size-card">
-        <div class="label">UK</div>
-        <div class="value" id="ukValue">—</div>
+
+      <div class="hint">Current width: <span id="cardWidthPxReadout">380</span> px</div>
+
+      <div class="controls" style="margin-top:.6rem;">
+        <button class="btn" id="skipBtn">Skip calibration</button>
+        <button class="btn" id="nextBtn">Next</button>
       </div>
-      <div class="size-card">
-        <div class="label">EU</div>
-        <div class="value" id="euValue">—</div>
+    </section>
+
+    <section class="step" id="step2" style="display:none;">
+      <h2 class="title">Step 2: Measure Your Ring Size</h2>
+      <p class="subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
+
+      <div class="sizer-area">
+        <div id="sizerCircle"></div>
       </div>
-    </div>
-  </section>
+
+      <div class="controls" style="margin-top:.25rem">
+        <button class="btn" id="circleSmaller">−</button>
+        <button class="btn" id="circleLarger">+</button>
+        <button class="btn" id="reset18">Reset to 18 mm</button>
+      </div>
+
+      <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
+
+      <div class="sizes-grid" aria-live="polite">
+        <div class="size-card"><div class="label">US</div><div class="value" id="usValue">—</div></div>
+        <div class="size-card"><div class="label">UK</div><div class="value" id="ukValue">—</div></div>
+        <div class="size-card"><div class="label">EU</div><div class="value" id="euValue">—</div></div>
+      </div>
+    </section>
+  </main>
 
   <script>
-    /***************
-     * Calibration
-     ***************/
-    const DEFAULT_PX_PER_MM = 96 / 25.4; // ~3.78 px/mm fallback
+    const DEFAULT_PX_PER_MM = 96 / 25.4;
     let pxPerMM = null;
 
     const cardEl = document.getElementById('creditCard');
@@ -212,7 +213,7 @@
       cardWidthPxReadout.textContent = px;
     }
 
-    let cardWidthPx = 380; // smaller default so it fits without scroll
+    let cardWidthPx = 380;
     applyCardWidth(cardWidthPx);
 
     document.getElementById('cardSmaller').addEventListener('click', () => {
@@ -220,7 +221,7 @@
       applyCardWidth(cardWidthPx);
     });
     document.getElementById('cardLarger').addEventListener('click', () => {
-      cardWidthPx = Math.min(2400, cardWidthPx + 10); // still allow very large if needed
+      cardWidthPx = Math.min(2400, cardWidthPx + 10);
       applyCardWidth(cardWidthPx);
     });
 
@@ -228,14 +229,14 @@
       document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
       document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
       if (n === 2) {
-        setDefaultDiameter(18); // start near real ring size
-        updateSizer();          // render immediately
+        setDefaultDiameter(18);
+        updateSizer();
       }
     }
 
     document.getElementById('nextBtn').addEventListener('click', () => {
-      const renderedPx = cardEl.getBoundingClientRect().width; // actual on-screen pixels
-      pxPerMM = renderedPx / 85.6; // 85.6 mm real width
+      const renderedPx = cardEl.getBoundingClientRect().width;
+      pxPerMM = renderedPx / 85.6;
       localStorage.setItem('pxPerMM', String(pxPerMM));
       goStep(2);
     });
@@ -246,20 +247,17 @@
       goStep(2);
     });
 
-    /***************
-     * Ring sizer
-     ***************/
+    /* Ring sizer */
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
     const usValue = document.getElementById('usValue');
     const ukValue = document.getElementById('ukValue');
     const euValue = document.getElementById('euValue');
 
-    let diameterPx = 0; // set from mm after calibration
+    let diameterPx = 0;
     let dragging = false;
     let startX = 0;
 
-    // Lookup table
     const sizeChart = [
       { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
       { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
@@ -296,7 +294,7 @@
         pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
       }
       diameterPx = Math.round(pxPerMM * targetMM);
-      diameterPx = Math.max(30, Math.min(760, diameterPx)); // max grows with wider box
+      diameterPx = Math.max(30, Math.min(760, diameterPx));
     }
 
     function updateSizer() {
@@ -316,7 +314,6 @@
       euValue.textContent = match.eu;
     }
 
-    // Drag to resize
     sizerEl.addEventListener('pointerdown', (e) => {
       dragging = true;
       startX = e.clientX;
@@ -325,13 +322,12 @@
     sizerEl.addEventListener('pointermove', (e) => {
       if (!dragging) return;
       const dx = e.clientX - startX;
-      diameterPx = Math.max(30, Math.min(760, diameterPx + dx)); // bigger max for wider area
+      diameterPx = Math.max(30, Math.min(760, diameterPx + dx));
       startX = e.clientX;
       updateSizer();
     });
     sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
-    // Buttons for circle
     document.getElementById('circleSmaller').addEventListener('click', () => {
       diameterPx = Math.max(30, diameterPx - 1);
       updateSizer();
