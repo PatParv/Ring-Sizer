@@ -12,25 +12,25 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #2e555a;                 /* your teal page bg */
+      background: #2e555a;                 /* page bg */
       touch-action: manipulation;
       overscroll-behavior: none;
     }
 
-    /* Full-viewport frame removes extra gray and centers the card */
+    /* Full-viewport frame */
     .frame {
       min-height: 100vh;
       display: flex;
-      align-items: center;                  /* vertical centering */
-      justify-content: center;              /* horizontal centering */
-      padding: 10px;                        /* tiny breathing room at edges */
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
     }
 
     /* Content card */
     .step {
       width: min(98vw, 1200px);
       background: #fff6f6;
-      padding: 14px 16px 18px;              /* extra bottom so red border never clips */
+      padding: 14px 16px 18px;
       border: 1px solid #ddd;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -39,18 +39,17 @@
     .title { margin: 0 0 .5rem; text-align: center; }
     .subtitle { margin: .25rem 0 .6rem; text-align: center; }
 
-    /* CALIBRATION AREA — bigger and guaranteed fully visible */
+    /* CALIBRATION AREA */
     .area {
       position: relative;
-      width: 100%;                          /* use full card width */
-      height: clamp(320px, 54vh, 520px);    /* taller, scales with screen */
+      width: 100%;
+      height: clamp(320px, 54vh, 520px);
       margin: 8px auto 10px;
       background: #fff;
-      border: 1px solid #ffb3b3;            /* red outline you want to see fully */
+      border: 1px solid #ffb3b3;
       border-radius: 12px;
-      overflow: hidden;                     /* no internal scrollbars */
+      overflow: hidden;
     }
-
     .card-canvas {
       position: relative;
       width: 100%;
@@ -59,10 +58,8 @@
       place-items: center;
       padding: 12px;
     }
-
-    /* Calibration rectangle */
     #creditCard {
-      width: 380px;                         /* good default; adjust with +/- */
+      width: 380px;                         /* default; change with +/- */
       aspect-ratio: 85.6 / 53.98;
       background: #e6e6e6;
       border: 2px solid #111;
@@ -88,9 +85,8 @@
       cursor: pointer;
     }
     .btn:hover { background: #e9e9e9; }
-    .hint { color: #777; font-size: .9rem; margin-top: .3rem; }
 
-    /* MEASUREMENT AREA — widened but shorter so everything fits */
+    /* MEASUREMENT AREA */
     .sizer-area {
       position: relative;
       width: min(96vw, 760px);
@@ -99,18 +95,19 @@
       background: #fff;
       border: 1px solid #ffb3b3;
       border-radius: 12px;
-    }
 
+      /* NEW: perfect centering */
+      display: grid;
+      place-items: center;
+    }
     #sizerCircle {
       width: 100px;
       height: 100px;
       border: 3px dotted #000;
       border-radius: 50%;
       background: rgba(211,211,211,0.5);
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      /* NEW: no absolute positioning — grid centers it */
+      position: relative;
       touch-action: none;
       cursor: grab;
       box-shadow: 0 0 6px rgba(0,0,0,0.15);
@@ -131,6 +128,7 @@
       border-radius: 12px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.05);
       padding: 8px 6px;
+      text-align: left;
     }
     .size-card .label {
       font-size: .72rem;
@@ -154,6 +152,7 @@
 </head>
 <body>
   <main class="frame">
+    <!-- STEP 1 -->
     <section class="step" id="step1">
       <h2 class="title">Step 1: Calibrate Your Screen</h2>
       <p class="subtitle">Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
@@ -169,7 +168,7 @@
         <button class="btn" id="cardLarger">+</button>
       </div>
 
-      <div class="hint">Current width: <span id="cardWidthPxReadout">380</span> px</div>
+      <!-- Removed the "Current width: xxx px" line -->
 
       <div class="controls" style="margin-top:.6rem;">
         <button class="btn" id="skipBtn">Skip calibration</button>
@@ -177,6 +176,7 @@
       </div>
     </section>
 
+    <!-- STEP 2 -->
     <section class="step" id="step2" style="display:none;">
       <h2 class="title">Step 2: Measure Your Ring Size</h2>
       <p class="subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
@@ -205,12 +205,11 @@
     const DEFAULT_PX_PER_MM = 96 / 25.4;
     let pxPerMM = null;
 
+    // Calibration
     const cardEl = document.getElementById('creditCard');
-    const cardWidthPxReadout = document.getElementById('cardWidthPxReadout');
 
     function applyCardWidth(px) {
       cardEl.style.width = px + 'px';
-      cardWidthPxReadout.textContent = px;
     }
 
     let cardWidthPx = 380;
@@ -247,7 +246,7 @@
       goStep(2);
     });
 
-    /* Ring sizer */
+    // Ring sizer
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
     const usValue = document.getElementById('usValue');
@@ -314,6 +313,7 @@
       euValue.textContent = match.eu;
     }
 
+    // Drag to resize (still works with grid centering)
     sizerEl.addEventListener('pointerdown', (e) => {
       dragging = true;
       startX = e.clientX;
@@ -328,6 +328,7 @@
     });
     sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
+    // Buttons for circle
     document.getElementById('circleSmaller').addEventListener('click', () => {
       diameterPx = Math.max(30, diameterPx - 1);
       updateSizer();
