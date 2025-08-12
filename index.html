@@ -87,19 +87,20 @@
     .btn:hover { background: #e9e9e9; }
 
     /* MEASUREMENT AREA */
-    .sizer-area {
-      position: relative;
-      width: min(96vw, 760px);
-      height: clamp(260px, 44vh, 380px);
-      margin: 6px auto 8px;
-      background: #fff;
-      border: 1px solid #ffb3b3;
-      border-radius: 12px;
-
-      /* NEW: perfect centering */
-      display: grid;
-      place-items: center;
-    }
+    /* Keep the inner white box inside the pink card */
+.sizer-area {
+  position: relative;
+  width: 100%;          /* fill parent instead of using viewport width */
+  max-width: 760px;     /* cap so it doesn’t get too huge */
+  height: clamp(260px, 44vh, 380px);
+  margin: 6px auto 8px;
+  background: #fff;
+  border: 1px solid #ffb3b3;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;     /* clip inner edges to the rounded corners */
+}
     #sizerCircle {
       width: 100px;
       height: 100px;
