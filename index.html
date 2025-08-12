@@ -40,7 +40,7 @@
 
     /* Calibration rectangle */
     #creditCard {
-      width: 320px; /* start bigger so laptops can match easily */
+      width: 320px;
       aspect-ratio: 85.6 / 53.98; /* exact ID-1 aspect ratio */
       background: #e6e6e6;
       border: 2px solid #111;
@@ -50,7 +50,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
-      pointer-events: none; /* we resize via controls/slider */
+      pointer-events: none;
     }
 
     .controls { margin: .75rem 0 0; display: flex; align-items: center; justify-content: center; gap: .6rem; flex-wrap: wrap; }
@@ -63,11 +63,6 @@
       cursor: pointer;
     }
     .btn:hover { background: #e9e9e9; }
-
-    .slider {
-      width: min(84vw, 560px);
-      accent-color: #d33;
-    }
 
     .hint { color: #777; font-size: .9rem; margin-top: .35rem; }
 
@@ -88,23 +83,18 @@
       height: 100px;
       border: 3px dotted #000;
       border-radius: 50%;
-      background: rgba(211,211,211,0.5); /* light gray */
+      background: rgba(211,211,211,0.5);
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      touch-action: none; /* allow pointer events with no browser gestures */
+      touch-action: none;
       cursor: grab;
       box-shadow: 0 0 6px rgba(0,0,0,0.15);
     }
 
     .diameter-line { margin-top: 10px; font-weight: 700; }
     .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: 10px; padding: 0 10px; font-weight: 700; }
-
-    /* Make buttons/slider comfortable on mobile */
-    @media (max-width: 480px) {
-      .btn { padding: .55rem .9rem; }
-    }
   </style>
 </head>
 <body>
@@ -112,20 +102,19 @@
   <!-- STEP 1: CALIBRATION -->
   <section class="step" id="step1">
     <h2>Step 1: Calibrate Your Screen</h2>
-    <p>Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm). Use the slider or ± for fine tuning.</p>
+    <p>Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
 
     <div class="area" id="cardArea">
-      <div id="creditCard" aria-label="Credit card outline for calibration"></div>
+      <div id="creditCard"></div>
     </div>
 
     <div class="controls">
-      <button class="btn" id="cardSmaller">− 10 px</button>
-      <input type="range" class="slider" id="cardSlider" min="120" max="1200" step="2" />
-      <button class="btn" id="cardLarger">+ 10 px</button>
+      <button class="btn" id="cardSmaller">−</button>
+      <button class="btn" id="cardLarger">+</button>
     </div>
 
     <div class="hint">
-      Current width (pixels): <span id="cardWidthPxReadout">320</span> px
+      Current width: <span id="cardWidthPxReadout">320</span> px
     </div>
 
     <div class="controls" style="margin-top: .9rem;">
@@ -158,57 +147,32 @@
   </section>
 
   <script>
-    /***********************
-     * Calibration (pixel-based)
-     ***********************/
-    const DEFAULT_PX_PER_MM = 96 / 25.4; // ~3.78 px/mm fallback if skipped
-    let pxPerMM = null;                  // computed after calibration
+    const DEFAULT_PX_PER_MM = 96 / 25.4;
+    let pxPerMM = null;
 
     const cardEl = document.getElementById('creditCard');
-    const cardArea = document.getElementById('cardArea');
-    const cardSlider = document.getElementById('cardSlider');
     const cardWidthPxReadout = document.getElementById('cardWidthPxReadout');
 
-    // Initialize card width and slider based on container size
-    function initCard() {
-      const areaW = cardArea.clientWidth;
-      // start around 60% of area width; clamp to slider bounds
-      const startPx = Math.min(Math.max(Math.round(areaW * 0.6), parseInt(cardSlider.min)), parseInt(cardSlider.max));
-      cardSlider.value = startPx;
-      applyCardWidth(parseInt(cardSlider.value));
-    }
-
     function applyCardWidth(px) {
-      // Set width in pixels; height follows via aspect-ratio in CSS
       cardEl.style.width = px + 'px';
-      // Update readout
       cardWidthPxReadout.textContent = px;
     }
 
-    // Buttons & slider events
+    let cardWidthPx = 320;
+    applyCardWidth(cardWidthPx);
+
     document.getElementById('cardSmaller').addEventListener('click', () => {
-      let v = parseInt(cardSlider.value) - 10;
-      v = Math.max(v, parseInt(cardSlider.min));
-      cardSlider.value = v;
-      applyCardWidth(v);
+      cardWidthPx = Math.max(100, cardWidthPx - 10);
+      applyCardWidth(cardWidthPx);
     });
-
     document.getElementById('cardLarger').addEventListener('click', () => {
-      let v = parseInt(cardSlider.value) + 10;
-      v = Math.min(v, parseInt(cardSlider.max));
-      cardSlider.value = v;
-      applyCardWidth(v);
+      cardWidthPx = Math.min(1200, cardWidthPx + 10);
+      applyCardWidth(cardWidthPx);
     });
 
-    cardSlider.addEventListener('input', (e) => {
-      applyCardWidth(parseInt(e.target.value));
-    });
-
-    // Next / Skip
     document.getElementById('nextBtn').addEventListener('click', () => {
-      // compute px/mm based on rendered element width on the user's device
-      const renderedPx = cardEl.getBoundingClientRect().width; // px on screen
-      pxPerMM = renderedPx / 85.6; // 85.6 mm is the real card width
+      const renderedPx = cardEl.getBoundingClientRect().width;
+      pxPerMM = renderedPx / 85.6;
       localStorage.setItem('pxPerMM', String(pxPerMM));
       goStep(2);
     });
@@ -219,9 +183,6 @@
       goStep(2);
     });
 
-    /***********************
-     * Ring sizer
-     ***********************/
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
     const usOut = document.getElementById('usOut');
@@ -263,25 +224,20 @@
     }
 
     function updateSizer() {
-      // if user landed here and we have stored calibration, use it
       if (!pxPerMM) {
         const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
         pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
       }
-
       sizerEl.style.width  = diameterPx + 'px';
       sizerEl.style.height = diameterPx + 'px';
-
       const diameterMM = (diameterPx / pxPerMM).toFixed(1);
       const match = nearestSize(parseFloat(diameterMM));
-
       diameterOut.textContent = `Diameter: ${diameterMM} mm`;
       usOut.textContent = `US: ${match.us}`;
       ukOut.textContent = `UK: ${match.uk}`;
       euOut.textContent = `EU: ${match.eu}`;
     }
 
-    // Drag to resize
     sizerEl.addEventListener('pointerdown', (e) => {
       dragging = true;
       startX = e.clientX;
@@ -296,7 +252,6 @@
     });
     sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
-    // Buttons for circle
     document.getElementById('circleSmaller').addEventListener('click', () => {
       diameterPx = Math.max(30, diameterPx - 1);
       updateSizer();
@@ -311,14 +266,6 @@
       document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
       if (n === 2) updateSizer();
     }
-
-    // init
-    window.addEventListener('load', () => {
-      initCard();
-      // Optional: auto-jump to step 2 if a previous calibration exists
-      // const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-      // if (stored > 0) { pxPerMM = stored; goStep(2); } else { goStep(1); }
-    });
   </script>
 </body>
 </html>
