@@ -135,6 +135,7 @@
     <div class="controls">
       <button class="btn" id="circleSmaller">−</button>
       <button class="btn" id="circleLarger">+</button>
+      <button class="btn" id="reset18">Reset to 18 mm</button>
     </div>
 
     <div class="diameter-line" id="diameterOut">Diameter: — mm</div>
@@ -147,7 +148,10 @@
   </section>
 
   <script>
-    const DEFAULT_PX_PER_MM = 96 / 25.4;
+    /***************
+     * Calibration
+     ***************/
+    const DEFAULT_PX_PER_MM = 96 / 25.4; // ~3.78 px/mm fallback
     let pxPerMM = null;
 
     const cardEl = document.getElementById('creditCard');
@@ -158,7 +162,7 @@
       cardWidthPxReadout.textContent = px;
     }
 
-    let cardWidthPx = 320;
+    let cardWidthPx = 320; // start comfortable on laptops
     applyCardWidth(cardWidthPx);
 
     document.getElementById('cardSmaller').addEventListener('click', () => {
@@ -166,13 +170,24 @@
       applyCardWidth(cardWidthPx);
     });
     document.getElementById('cardLarger').addEventListener('click', () => {
-      cardWidthPx = Math.min(1200, cardWidthPx + 10);
+      cardWidthPx = Math.min(1600, cardWidthPx + 10);
       applyCardWidth(cardWidthPx);
     });
 
+    // helpers
+    function goStep(n) {
+      document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
+      document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
+      if (n === 2) {
+        // ensure we start near a real size
+        setDefaultDiameter(18); // 18 mm default
+        updateSizer();
+      }
+    }
+
     document.getElementById('nextBtn').addEventListener('click', () => {
-      const renderedPx = cardEl.getBoundingClientRect().width;
-      pxPerMM = renderedPx / 85.6;
+      const renderedPx = cardEl.getBoundingClientRect().width; // actual on-screen pixels
+      pxPerMM = renderedPx / 85.6; // 85.6 mm real width
       localStorage.setItem('pxPerMM', String(pxPerMM));
       goStep(2);
     });
@@ -183,16 +198,20 @@
       goStep(2);
     });
 
+    /***************
+     * Ring sizer
+     ***************/
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
     const usOut = document.getElementById('usOut');
     const ukOut = document.getElementById('ukOut');
     const euOut = document.getElementById('euOut');
 
-    let diameterPx = 120;
+    let diameterPx = 0; // will be set from mm after calibration
     let dragging = false;
     let startX = 0;
 
+    // Lookup table
     const sizeChart = [
       { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
       { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
@@ -223,6 +242,16 @@
       );
     }
 
+    function setDefaultDiameter(targetMM) {
+      // If calibration exists, use it; else load from localStorage or fallback
+      if (!pxPerMM) {
+        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
+        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
+      }
+      diameterPx = Math.round(pxPerMM * targetMM);
+      diameterPx = Math.max(30, Math.min(520, diameterPx));
+    }
+
     function updateSizer() {
       if (!pxPerMM) {
         const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
@@ -230,14 +259,17 @@
       }
       sizerEl.style.width  = diameterPx + 'px';
       sizerEl.style.height = diameterPx + 'px';
+
       const diameterMM = (diameterPx / pxPerMM).toFixed(1);
       const match = nearestSize(parseFloat(diameterMM));
+
       diameterOut.textContent = `Diameter: ${diameterMM} mm`;
       usOut.textContent = `US: ${match.us}`;
       ukOut.textContent = `UK: ${match.uk}`;
       euOut.textContent = `EU: ${match.eu}`;
     }
 
+    // Drag to resize
     sizerEl.addEventListener('pointerdown', (e) => {
       dragging = true;
       startX = e.clientX;
@@ -252,6 +284,7 @@
     });
     sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
+    // Buttons for circle
     document.getElementById('circleSmaller').addEventListener('click', () => {
       diameterPx = Math.max(30, diameterPx - 1);
       updateSizer();
@@ -260,12 +293,10 @@
       diameterPx = Math.min(520, diameterPx + 1);
       updateSizer();
     });
-
-    function goStep(n) {
-      document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
-      document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
-      if (n === 2) updateSizer();
-    }
+    document.getElementById('reset18').addEventListener('click', () => {
+      setDefaultDiameter(18);
+      updateSizer();
+    });
   </script>
 </body>
 </html>
