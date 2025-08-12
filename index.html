@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Prevent accidental pinch zoom while resizing -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ring Size Finder</title>
   <style>
@@ -12,12 +13,12 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #2e555a;                 /* page bg */
+      background: #2e555a;     /* page background */
+      color: #111;
       touch-action: manipulation;
       overscroll-behavior: none;
     }
 
-    /* Full-viewport frame */
     .frame {
       min-height: 100vh;
       display: flex;
@@ -26,7 +27,6 @@
       padding: 10px;
     }
 
-    /* Content card */
     .step {
       width: min(98vw, 1200px);
       background: #fff6f6;
@@ -35,9 +35,8 @@
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
-
     .title { margin: 0 0 .5rem; text-align: center; }
-    .subtitle { margin: .25rem 0 .6rem; text-align: center; }
+    .subtitle { margin: .25rem 0 .8rem; text-align: center; }
 
     /* Shared stage box (same size in both steps) */
     .stage {
@@ -54,17 +53,7 @@
       place-items: center;
     }
 
-    /* Calibration rectangle */
-    #creditCard {
-      width: 380px;                         /* default (JS may override on load) */
-      aspect-ratio: 85.6 / 53.98;
-      background: #e6e6e6;
-      border: 2px solid #111;
-      border-radius: 16px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
-      pointer-events: none;
-    }
-
+    /* Buttons/controls */
     .controls {
       margin: .5rem 0 0;
       display: flex;
@@ -74,7 +63,7 @@
       flex-wrap: wrap;
     }
     .btn {
-      padding: .45rem .9rem;
+      padding: .5rem 1rem;
       font-size: 1rem;
       border-radius: 10px;
       border: 1px solid #ddd;
@@ -83,20 +72,55 @@
     }
     .btn:hover { background: #e9e9e9; }
 
-    /* Measurement circle area uses the same .stage sizing */
+    .segmented {
+      display: inline-flex;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .segmented button {
+      border: 0;
+      background: #f3f3f3;
+      padding: .5rem .9rem;
+      cursor: pointer;
+      font-size: .95rem;
+    }
+    .segmented button.active { background: #fff; font-weight: 700; }
+
+    /* Calibration shapes */
+    #creditCard {
+      width: 380px; /* JS sets on load; aspect keeps height correct */
+      aspect-ratio: 85.6 / 53.98;
+      background: #e6e6e6;
+      border: 2px solid #111;
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+      pointer-events: none;
+    }
+    #coinCircle {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: #e6e6e6;
+      border: 2px solid #111;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+      pointer-events: none;
+    }
+
+    /* Ring sizer circle */
     #sizerCircle {
       width: 100px;
       height: 100px;
       border: 3px dotted #000;
       border-radius: 50%;
       background: rgba(211,211,211,0.5);
-      position: relative;                   /* centered by grid parent */
+      position: relative; /* centered by grid parent */
       touch-action: none;
       cursor: grab;
       box-shadow: 0 0 6px rgba(0,0,0,0.15);
     }
 
-    .diameter-line { margin-top: 4px; font-weight: 700; text-align: center; }
+    .diameter-line { margin-top: 6px; font-weight: 700; text-align: center; }
 
     /* Size cards */
     .sizes-grid {
@@ -127,61 +151,80 @@
       line-height: 1.05;
     }
 
-    /* ======================
-       Mobile-only tweaks
-       ====================== */
+    /* Mobile-only tweaks */
     @media (max-width: 520px) {
       .frame { padding: 0; }
-
-      .step {
-        width: 100vw;
-        border-radius: 0;
-        padding: 10px 10px 12px;
-      }
-
-      .stage {
-        width: 100%;
-        max-width: none;                  /* no cap on phones */
-        height: clamp(340px, 62vh, 540px);
-        margin: 6px 0 8px;
-      }
-
-      .btn {
-        min-width: 44px;
-        padding: .6rem 1rem;
-        font-size: 1.05rem;
-        border-radius: 12px;
-      }
-
-      .sizes-grid { gap: 8px; }
+      .step { width: 100vw; border-radius: 0; padding: 10px 10px 12px; }
+      .stage { width: 100%; max-width: none; height: clamp(340px, 62vh, 540px); margin: 6px 0 8px; }
+      .btn { min-width: 44px; padding: .6rem 1rem; font-size: 1.05rem; border-radius: 12px; }
       .size-card { padding: 10px 8px; }
       .size-card .value { font-size: 1.25rem; }
+
+      /* Hide the mode switch on mobile (coin-only UX) */
+      .mode-switch { display: none; }
     }
   </style>
 </head>
 <body>
   <main class="frame">
-    <!-- STEP 1 -->
+
+    <!-- STEP 1: Calibration (mobile = coins; desktop = card by default) -->
     <section class="step" id="step1">
       <h2 class="title">Step 1: Calibrate Your Screen</h2>
-      <p class="subtitle">Resize the rectangle to match a real credit card (8.56 cm × 5.398 cm).</p>
+      <p class="subtitle">Choose your method, then resize to match the real object for accurate sizing.</p>
 
-      <div class="stage" id="cardArea">
-        <div id="creditCard"></div>
+      <!-- Mode switch: visible on desktop; hidden on mobile via CSS -->
+      <div class="controls mode-switch" style="margin-bottom:.4rem">
+        <div class="segmented" role="tablist" aria-label="Calibration method">
+          <button id="modeCoinBtn" class="active" role="tab" aria-selected="true">Coin</button>
+          <button id="modeCardBtn" role="tab" aria-selected="false">Credit card</button>
+        </div>
       </div>
 
-      <div class="controls">
-        <button class="btn" id="cardSmaller">−</button>
-        <button class="btn" id="cardLarger">+</button>
+      <!-- COIN MODE (mobile default) -->
+      <div id="coinMode">
+        <div class="controls" style="margin-top:.2rem">
+          <div class="segmented" aria-label="Coin type">
+            <button id="coinEURBtn" class="active">€1 (23.25 mm)</button>
+            <button id="coinUSBtn">US quarter (24.26 mm)</button>
+            <button id="coinUKBtn">UK £1 (22.5 mm)</button>
+            <button id="coinCADBtn">CAD quarter (23.88 mm)</button>
+          </div>
+        </div>
+
+        <div class="stage" id="coinStage">
+          <div id="coinCircle"></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="coinSmaller">−</button>
+          <button class="btn" id="coinLarger">+</button>
+        </div>
+
+        <div class="controls" style="margin-top:.6rem">
+          <button class="btn" id="skipBtn1">Skip calibration</button>
+          <button class="btn" id="nextBtn1">Next</button>
+        </div>
       </div>
 
-      <div class="controls" style="margin-top:.6rem;">
-        <button class="btn" id="skipBtn">Skip calibration</button>
-        <button class="btn" id="nextBtn">Next</button>
+      <!-- CARD MODE (desktop default) -->
+      <div id="cardMode" style="display:none">
+        <p class="subtitle" style="margin-top:.4rem">Resize to match the long edge of a credit card (85.6 mm).</p>
+        <div class="stage" id="cardArea">
+          <div id="creditCard"></div>
+        </div>
+        <div class="controls">
+          <button class="btn" id="cardSmaller">−</button>
+          <button class="btn" id="cardLarger">+</button>
+        </div>
+        <div class="controls" style="margin-top:.6rem">
+          <button class="btn" id="skipBtn2">Skip calibration</button>
+          <button class="btn" id="nextBtn2">Next</button>
+        </div>
       </div>
     </section>
 
-    <!-- STEP 2 -->
+    <!-- STEP 2: Ring sizer -->
     <section class="step" id="step2" style="display:none;">
       <h2 class="title">Step 2: Measure Your Ring Size</h2>
       <p class="subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
@@ -204,23 +247,103 @@
         <div class="size-card"><div class="label">EU</div><div class="value" id="euValue">—</div></div>
       </div>
     </section>
+
   </main>
 
   <script>
-    const DEFAULT_PX_PER_MM = 96 / 25.4;
+    // ===== Config / helpers =====
+    const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
     const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
+
+    // Coin diameters (mm)
+    const COIN_EUR_1      = 23.25;
+    const COIN_US_QUARTER = 24.26;
+    const COIN_UK_1GBP    = 22.5;
+    const COIN_CAD_QUART  = 23.88;
 
     let pxPerMM = null;
 
-    // Calibration
-    const cardEl = document.getElementById('creditCard');
+    // ===== Mode switching (Coin vs Card) =====
+    const modeCoinBtn = document.getElementById('modeCoinBtn');
+    const modeCardBtn = document.getElementById('modeCardBtn');
+    const coinMode = document.getElementById('coinMode');
+    const cardMode = document.getElementById('cardMode');
 
-    function applyCardWidth(px) {
-      cardEl.style.width = px + 'px';
+    function setMode(mode) {
+      const coinActive = (mode === 'coin');
+      coinMode.style.display = coinActive ? 'block' : 'none';
+      cardMode.style.display = coinActive ? 'none' : 'block';
+      if (modeCoinBtn && modeCardBtn) {
+        modeCoinBtn.classList.toggle('active', coinActive);
+        modeCardBtn.classList.toggle('active', !coinActive);
+        modeCoinBtn.setAttribute('aria-selected', coinActive ? 'true' : 'false');
+        modeCardBtn.setAttribute('aria-selected', !coinActive ? 'true' : 'false');
+      }
     }
 
-    // Mobile-friendly default width (smaller on phones)
+    // Desktop default: card; Mobile default: coin
+    setMode(IS_MOBILE ? 'coin' : 'card');
+
+    // Keep desktop switch behavior (unchanged)
+    if (modeCoinBtn && modeCardBtn) {
+      modeCoinBtn.addEventListener('click', () => setMode('coin'));
+      modeCardBtn.addEventListener('click', () => setMode('card'));
+    }
+
+    // ===== Coin calibration =====
+    const coinEURBtn = document.getElementById('coinEURBtn');
+    const coinUSBtn  = document.getElementById('coinUSBtn');
+    const coinUKBtn  = document.getElementById('coinUKBtn');
+    const coinCADBtn = document.getElementById('coinCADBtn');
+
+    const coinCircle = document.getElementById('coinCircle');
+    const coinSmaller = document.getElementById('coinSmaller');
+    const coinLarger  = document.getElementById('coinLarger');
+
+    let coinTargetMM = COIN_EUR_1; // default to €1
+    let coinPx = IS_MOBILE ? 160 : 180; // initial visual size
+
+    function updateCoinUI() {
+      coinEURBtn.classList.toggle('active', coinTargetMM === COIN_EUR_1);
+      coinUSBtn.classList.toggle('active',  coinTargetMM === COIN_US_QUARTER);
+      coinUKBtn.classList.toggle('active',  coinTargetMM === COIN_UK_1GBP);
+      coinCADBtn.classList.toggle('active', coinTargetMM === COIN_CAD_QUART);
+      coinCircle.style.width = coinPx + 'px';
+      coinCircle.style.height = coinPx + 'px';
+    }
+
+    coinEURBtn.addEventListener('click', () => { coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
+    coinUSBtn .addEventListener('click', () => { coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
+    coinUKBtn .addEventListener('click', () => { coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
+    coinCADBtn.addEventListener('click', () => { coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
+
+    coinSmaller.addEventListener('click', () => {
+      coinPx = Math.max(60, coinPx - 6); // 6px steps
+      updateCoinUI();
+    });
+    coinLarger.addEventListener('click', () => {
+      coinPx = Math.min(1000, coinPx + 6);
+      updateCoinUI();
+    });
+
+    // Compute px/mm from the coin match
+    document.getElementById('nextBtn1').addEventListener('click', () => {
+      const renderedPx = coinCircle.getBoundingClientRect().width;
+      pxPerMM = renderedPx / coinTargetMM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
+    document.getElementById('skipBtn1').addEventListener('click', () => {
+      pxPerMM = DEFAULT_PX_PER_MM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
+
+    // ===== Card calibration (desktop flow unchanged) =====
+    const creditCard = document.getElementById('creditCard');
     let cardWidthPx = IS_MOBILE ? 320 : 380;
+
+    function applyCardWidth(px) { creditCard.style.width = px + 'px'; }
     applyCardWidth(cardWidthPx);
 
     document.getElementById('cardSmaller').addEventListener('click', () => {
@@ -232,6 +355,19 @@
       applyCardWidth(cardWidthPx);
     });
 
+    document.getElementById('nextBtn2').addEventListener('click', () => {
+      const renderedPx = creditCard.getBoundingClientRect().width; // long edge
+      pxPerMM = renderedPx / 85.6; // 85.6 mm
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
+    document.getElementById('skipBtn2').addEventListener('click', () => {
+      pxPerMM = DEFAULT_PX_PER_MM;
+      localStorage.setItem('pxPerMM', String(pxPerMM));
+      goStep(2);
+    });
+
+    // ===== Step switching =====
     function goStep(n) {
       document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
       document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
@@ -241,20 +377,7 @@
       }
     }
 
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      const renderedPx = cardEl.getBoundingClientRect().width;
-      pxPerMM = renderedPx / 85.6;      // 85.6 mm true width
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-
-    document.getElementById('skipBtn').addEventListener('click', () => {
-      pxPerMM = DEFAULT_PX_PER_MM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-
-    // Ring sizer
+    // ===== Ring sizer =====
     const sizerEl = document.getElementById('sizerCircle');
     const diameterOut = document.getElementById('diameterOut');
     const usValue = document.getElementById('usValue');
@@ -349,6 +472,9 @@
       setDefaultDiameter(18);
       updateSizer();
     });
+
+    // Initialize coin UI and ensure correct default mode per device
+    updateCoinUI();
   </script>
 </body>
 </html>
