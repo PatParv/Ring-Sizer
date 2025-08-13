@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Ring Size Finder</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html, body {
       height: 100%;
@@ -55,12 +55,14 @@
       place-items: center;
     }
 
-    /* Ring sizer white box: intentionally shorter to remove extra top/bottom space */
+    /* Ring sizer white box: shorter to remove extra top/bottom space */
     #sizerArea.stage {
       height: clamp(240px, 40vh, 360px);
     }
 
     .controls {
+      position: relative;
+      z-index: 5;                       /* ensure buttons are always clickable */
       margin: .45rem 0 0;
       display: flex;
       align-items: center;
@@ -69,12 +71,14 @@
       flex-wrap: wrap;
     }
     .btn {
-      padding: .5rem 1rem;
+      padding: .55rem 1rem;
       font-size: 1rem;
       border-radius: 10px;
       border: 1px solid #ddd;
       background: #f3f3f3;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .btn:hover { background: #e9e9e9; }
 
@@ -165,7 +169,7 @@
       /* keep heights modest to avoid page scroll on phones */
       .stage { height: clamp(280px, 48vh, 420px); }
       #sizerArea.stage { height: clamp(220px, 38vh, 340px); }
-      .btn { min-width: 44px; padding: .55rem 1rem; font-size: 1.05rem; border-radius: 12px; }
+      .btn { min-width: 44px; padding: .6rem 1rem; font-size: 1.05rem; border-radius: 12px; }
 
       /* Hide the mode switch on mobile (coin-only UX) */
       .mode-switch { display: none; }
@@ -258,287 +262,248 @@
   </main>
 
   <script>
-    // ===== Basics =====
-    const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
-    const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
+    document.addEventListener('DOMContentLoaded', () => {
+      const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
+      const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
 
-    // Coin diameters (mm)
-    const COIN_EUR_1      = 23.25;
-    const COIN_US_QUARTER = 24.26;
-    const COIN_UK_1GBP    = 22.5;
-    const COIN_CAD_QUART  = 23.88;
+      // Coin diameters (mm)
+      const COIN_EUR_1      = 23.25;
+      const COIN_US_QUARTER = 24.26;
+      const COIN_UK_1GBP    = 22.5;
+      const COIN_CAD_QUART  = 23.88;
 
-    let pxPerMM = null;
+      let pxPerMM = null;
 
-    // Mode switching (desktop can toggle; mobile defaults to coin)
-    const modeCoinBtn = document.getElementById('modeCoinBtn');
-    const modeCardBtn = document.getElementById('modeCardBtn');
-    const coinMode = document.getElementById('coinMode');
-    const cardMode = document.getElementById('cardMode');
+      // Mode switching (desktop can toggle; mobile defaults to coin)
+      const modeCoinBtn = document.getElementById('modeCoinBtn');
+      const modeCardBtn = document.getElementById('modeCardBtn');
+      const coinMode = document.getElementById('coinMode');
+      const cardMode = document.getElementById('cardMode');
 
-    function setMode(mode) {
-      const coinActive = (mode === 'coin');
-      coinMode.style.display = coinActive ? 'block' : 'none';
-      cardMode.style.display = coinActive ? 'none' : 'block';
-      if (modeCoinBtn && modeCardBtn) {
-        modeCoinBtn.classList.toggle('active', coinActive);
-        modeCardBtn.classList.toggle('active', !coinActive);
-        modeCoinBtn.setAttribute('aria-selected', coinActive ? 'true' : 'false');
-        modeCardBtn.setAttribute('aria-selected', !coinActive ? 'true' : 'false');
+      function setMode(mode) {
+        const coinActive = (mode === 'coin');
+        coinMode.style.display = coinActive ? 'block' : 'none';
+        cardMode.style.display = coinActive ? 'none' : 'block';
+        if (modeCoinBtn && modeCardBtn) {
+          modeCoinBtn.classList.toggle('active', coinActive);
+          modeCardBtn.classList.toggle('active', !coinActive);
+          modeCoinBtn.setAttribute('aria-selected', coinActive ? 'true' : 'false');
+          modeCardBtn.setAttribute('aria-selected', !coinActive ? 'true' : 'false');
+        }
       }
-    }
 
-    // Desktop default: card; Mobile default: coin
-    setMode(IS_MOBILE ? 'coin' : 'card');
+      // Desktop default: card; Mobile default: coin
+      setMode(IS_MOBILE ? 'coin' : 'card');
 
-    if (modeCoinBtn && modeCardBtn) {
-      modeCoinBtn.addEventListener('click', () => setMode('coin'));
-      modeCardBtn.addEventListener('click', () => setMode('card'));
-    }
+      if (modeCoinBtn && modeCardBtn) {
+        modeCoinBtn.addEventListener('click', () => setMode('coin'));
+        modeCardBtn.addEventListener('click', () => setMode('card'));
+      }
 
-    // ===== Coin calibration =====
-    const coinEURBtn = document.getElementById('coinEURBtn');
-    const coinUSBtn  = document.getElementById('coinUSBtn');
-    const coinUKBtn  = document.getElementById('coinUKBtn');
-    const coinCADBtn = document.getElementById('coinCADBtn');
+      // ===== Coin calibration =====
+      const coinEURBtn = document.getElementById('coinEURBtn');
+      const coinUSBtn  = document.getElementById('coinUSBtn');
+      const coinUKBtn  = document.getElementById('coinUKBtn');
+      const coinCADBtn = document.getElementById('coinCADBtn');
 
-    const coinCircle = document.getElementById('coinCircle');
-    const coinSmaller = document.getElementById('coinSmaller');
-    const coinLarger  = document.getElementById('coinLarger');
+      const coinCircle = document.getElementById('coinCircle');
+      const coinSmaller = document.getElementById('coinSmaller');
+      const coinLarger  = document.getElementById('coinLarger');
 
-    let coinTargetMM = COIN_EUR_1;                // default to €1
-    let coinPx = IS_MOBILE ? 150 : 170;           // start smaller on phones
+      let coinTargetMM = COIN_EUR_1;                // default to €1
+      let coinPx = IS_MOBILE ? 150 : 170;           // start smaller on phones
 
-    function updateCoinUI() {
-      coinEURBtn.classList.toggle('active', coinTargetMM === COIN_EUR_1);
-      coinUSBtn .classList.toggle('active', coinTargetMM === COIN_US_QUARTER);
-      coinUKBtn .classList.toggle('active', coinTargetMM === COIN_UK_1GBP);
-      coinCADBtn.classList.toggle('active', coinTargetMM === COIN_CAD_QUART);
-      coinCircle.style.width = coinPx + 'px';
-      coinCircle.style.height = coinPx + 'px';
-    }
+      function updateCoinUI() {
+        coinEURBtn.classList.toggle('active', coinTargetMM === COIN_EUR_1);
+        coinUSBtn .classList.toggle('active', coinTargetMM === COIN_US_QUARTER);
+        coinUKBtn .classList.toggle('active', coinTargetMM === COIN_UK_1GBP);
+        coinCADBtn.classList.toggle('active', coinTargetMM === COIN_CAD_QUART);
+        coinCircle.style.width = coinPx + 'px';
+        coinCircle.style.height = coinPx + 'px';
+      }
 
-    coinEURBtn.addEventListener('click', () => { coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
-    coinUSBtn .addEventListener('click', () => { coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
-    coinUKBtn .addEventListener('click', () => { coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
-    coinCADBtn.addEventListener('click', () => { coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
+      coinEURBtn.addEventListener('click', () => { coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
+      coinUSBtn .addEventListener('click', () => { coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
+      coinUKBtn .addEventListener('click', () => { coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
+      coinCADBtn.addEventListener('click', () => { coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
 
-    coinSmaller.addEventListener('click', () => {
-      coinPx = Math.max(60, coinPx - 6);
-      updateCoinUI();
-    });
-    coinLarger.addEventListener('click', () => {
-      coinPx = Math.min(1000, coinPx + 6);
-      updateCoinUI();
-    });
+      coinSmaller.addEventListener('click', (e) => {
+        e.preventDefault();
+        coinPx = Math.max(60, coinPx - 6);
+        updateCoinUI();
+      });
+      coinLarger.addEventListener('click', (e) => {
+        e.preventDefault();
+        coinPx = Math.min(1000, coinPx + 6);
+        updateCoinUI();
+      });
 
-    document.getElementById('nextBtn1').addEventListener('click', () => {
-      const renderedPx = coinCircle.getBoundingClientRect().width;
-      pxPerMM = renderedPx / coinTargetMM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-    document.getElementById('skipBtn1').addEventListener('click', () => {
-      pxPerMM = DEFAULT_PX_PER_MM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
+      document.getElementById('nextBtn1').addEventListener('click', (e) => {
+        e.preventDefault();
+        const renderedPx = coinCircle.getBoundingClientRect().width;
+        pxPerMM = renderedPx / coinTargetMM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+      document.getElementById('skipBtn1').addEventListener('click', (e) => {
+        e.preventDefault();
+        pxPerMM = DEFAULT_PX_PER_MM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
 
-    // ===== Card calibration (desktop) =====
-    const creditCard = document.getElementById('creditCard');
-    let cardWidthPx = IS_MOBILE ? 320 : 380;
+      // ===== Card calibration (desktop) =====
+      const creditCard = document.getElementById('creditCard');
+      let cardWidthPx = IS_MOBILE ? 320 : 380;
 
-    function applyCardWidth(px) { creditCard.style.width = px + 'px'; }
-    applyCardWidth(cardWidthPx);
-
-    document.getElementById('cardSmaller').addEventListener('click', () => {
-      cardWidthPx = Math.max(120, cardWidthPx - 10);
+      function applyCardWidth(px) { creditCard.style.width = px + 'px'; }
       applyCardWidth(cardWidthPx);
-    });
-    document.getElementById('cardLarger').addEventListener('click', () => {
-      cardWidthPx = Math.min(2400, cardWidthPx + 10);
-      applyCardWidth(cardWidthPx);
-    });
 
-    document.getElementById('nextBtn2').addEventListener('click', () => {
-      const renderedPx = creditCard.getBoundingClientRect().width; // long edge
-      pxPerMM = renderedPx / 85.6;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-    document.getElementById('skipBtn2').addEventListener('click', () => {
-      pxPerMM = DEFAULT_PX_PER_MM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
+      document.getElementById('cardSmaller').addEventListener('click', (e) => {
+        e.preventDefault();
+        cardWidthPx = Math.max(120, cardWidthPx - 10);
+        applyCardWidth(cardWidthPx);
+      });
+      document.getElementById('cardLarger').addEventListener('click', (e) => {
+        e.preventDefault();
+        cardWidthPx = Math.min(2400, cardWidthPx + 10);
+        applyCardWidth(cardWidthPx);
+      });
 
-    // ===== Step switching =====
-    function goStep(n) {
-      document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
-      document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
-      if (n === 2) {
+      document.getElementById('nextBtn2').addEventListener('click', (e) => {
+        e.preventDefault();
+        const renderedPx = creditCard.getBoundingClientRect().width; // long edge
+        pxPerMM = renderedPx / 85.6;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+      document.getElementById('skipBtn2').addEventListener('click', (e) => {
+        e.preventDefault();
+        pxPerMM = DEFAULT_PX_PER_MM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+
+      // ===== Step switching =====
+      function goStep(n) {
+        document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
+        document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
+        if (n === 2) {
+          setDefaultDiameter(18);
+          updateSizer();
+        }
+      }
+
+      // ===== Ring sizer =====
+      const sizerEl = document.getElementById('sizerCircle');
+      const diameterOut = document.getElementById('diameterOut');
+      const usValue = document.getElementById('usValue');
+      const ukValue = document.getElementById('ukValue');
+      const euValue = document.getElementById('euValue');
+
+      let diameterPx = 0;
+      let dragging = false;
+      let startX = 0;
+
+      const sizeChart = [
+        { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
+        { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
+        { mm: 14.9, us: "4",   uk: "H",  eu: "46.5" },
+        { mm: 15.3, us: "4.5", uk: "I",  eu: "48"   },
+        { mm: 15.7, us: "5",   uk: "J",  eu: "49"   },
+        { mm: 16.1, us: "5.5", uk: "K",  eu: "50.5" },
+        { mm: 16.5, us: "6",   uk: "L",  eu: "51.5" },
+        { mm: 16.9, us: "6.5", uk: "M",  eu: "53"   },
+        { mm: 17.3, us: "7",   uk: "N",  eu: "54.5" },
+        { mm: 17.7, us: "7.5", uk: "O",  eu: "56"   },
+        { mm: 18.1, us: "8",   uk: "P",  eu: "57"   },
+        { mm: 18.5, us: "8.5", uk: "Q",  eu: "58.5" },
+        { mm: 18.9, us: "9",   uk: "R",  eu: "60"   },
+        { mm: 19.4, us: "9.5", uk: "S",  eu: "61"   },
+        { mm: 19.8, us: "10",  uk: "T",  eu: "62.5" },
+        { mm: 20.2, us: "10.5",uk: "U",  eu: "63.5" },
+        { mm: 20.6, us: "11",  uk: "V",  eu: "65"   },
+        { mm: 21.0, us: "11.5",uk: "W",  eu: "66"   },
+        { mm: 21.4, us: "12",  uk: "X",  eu: "67.5" },
+        { mm: 21.8, us: "12.5",uk: "Y",  eu: "69"   },
+        { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
+      ];
+
+      function nearestSize(mm) {
+        return sizeChart.reduce((prev, curr) =>
+          Math.abs(curr.mm - mm) < Math.abs(prev.mm - mm) ? curr : prev
+        );
+      }
+
+      function setDefaultDiameter(targetMM) {
+        if (!pxPerMM) {
+          const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
+          pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
+        }
+        diameterPx = Math.round(pxPerMM * targetMM);
+        diameterPx = Math.max(30, Math.min(760, diameterPx));
+      }
+
+      function updateSizer() {
+        if (!pxPerMM) {
+          const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
+          pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
+        }
+        sizerEl.style.width  = diameterPx + 'px';
+        sizerEl.style.height = diameterPx + 'px';
+
+        const diameterMM = (diameterPx / pxPerMM).toFixed(1);
+        const match = nearestSize(parseFloat(diameterMM));
+
+        diameterOut.textContent = `Diameter: ${diameterMM} mm`;
+        usValue.textContent = match.us;
+        ukValue.textContent = match.uk;
+        euValue.textContent = match.eu;
+      }
+
+      // Drag to resize
+      sizerEl.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        startX = e.clientX;
+        sizerEl.setPointerCapture(e.pointerId);
+      });
+      sizerEl.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        diameterPx = Math.max(30, Math.min(760, diameterPx + dx));
+        startX = e.clientX;
+        updateSizer();
+      });
+      sizerEl.addEventListener('pointerup', () => { dragging = false; });
+
+      // Buttons for circle
+      document.getElementById('circleSmaller').addEventListener('click', (e) => {
+        e.preventDefault();
+        diameterPx = Math.max(30, diameterPx - 1);
+        updateSizer();
+      });
+      document.getElementById('circleLarger').addEventListener('click', (e) => {
+        e.preventDefault();
+        diameterPx = Math.min(760, diameterPx + 1);
+        updateSizer();
+      });
+      document.getElementById('reset18').addEventListener('click', (e) => {
+        e.preventDefault();
         setDefaultDiameter(18);
         updateSizer();
-      }
-    }
-
-    // ===== Ring sizer =====
-    const sizerEl = document.getElementById('sizerCircle');
-    const diameterOut = document.getElementById('diameterOut');
-    const usValue = document.getElementById('usValue');
-    const ukValue = document.getElementById('ukValue');
-    const euValue = document.getElementById('euValue');
-
-    let diameterPx = 0;
-    let dragging = false;
-    let startX = 0;
-
-    const sizeChart = [
-      { mm: 14.1, us: "3",   uk: "F",  eu: "44"   },
-      { mm: 14.5, us: "3.5", uk: "G",  eu: "45.5" },
-      { mm: 14.9, us: "4",   uk: "H",  eu: "46.5" },
-      { mm: 15.3, us: "4.5", uk: "I",  eu: "48"   },
-      { mm: 15.7, us: "5",   uk: "J",  eu: "49"   },
-      { mm: 16.1, us: "5.5", uk: "K",  eu: "50.5" },
-      { mm: 16.5, us: "6",   uk: "L",  eu: "51.5" },
-      { mm: 16.9, us: "6.5", uk: "M",  eu: "53"   },
-      { mm: 17.3, us: "7",   uk: "N",  eu: "54.5" },
-      { mm: 17.7, us: "7.5", uk: "O",  eu: "56"   },
-      { mm: 18.1, us: "8",   uk: "P",  eu: "57"   },
-      { mm: 18.5, us: "8.5", uk: "Q",  eu: "58.5" },
-      { mm: 18.9, us: "9",   uk: "R",  eu: "60"   },
-      { mm: 19.4, us: "9.5", uk: "S",  eu: "61"   },
-      { mm: 19.8, us: "10",  uk: "T",  eu: "62.5" },
-      { mm: 20.2, us: "10.5",uk: "U",  eu: "63.5" },
-      { mm: 20.6, us: "11",  uk: "V",  eu: "65"   },
-      { mm: 21.0, us: "11.5",uk: "W",  eu: "66"   },
-      { mm: 21.4, us: "12",  uk: "X",  eu: "67.5" },
-      { mm: 21.8, us: "12.5",uk: "Y",  eu: "69"   },
-      { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
-    ];
-
-    function nearestSize(mm) {
-      return sizeChart.reduce((prev, curr) =>
-        Math.abs(curr.mm - mm) < Math.abs(prev.mm - prev.mm) ? curr : prev
-      );
-    }
-
-    function setDefaultDiameter(targetMM) {
-      if (!pxPerMM) {
-        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
-      }
-      diameterPx = Math.round(pxPerMM * targetMM);
-      diameterPx = Math.max(30, Math.min(760, diameterPx));
-    }
-
-    function updateSizer() {
-      if (!pxPerMM) {
-        const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-        pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
-      }
-      sizerEl.style.width  = diameterPx + 'px';
-      sizerEl.style.height = diameterPx + 'px';
-
-      const diameterMM = (diameterPx / pxPerMM).toFixed(1);
-      const match = sizeChart.reduce((prev, curr) =>
-        Math.abs(curr.mm - diameterMM) < Math.abs(prev.mm - diameterMM) ? curr : prev
-      );
-
-      diameterOut.textContent = `Diameter: ${diameterMM} mm`;
-      usValue.textContent = match.us;
-      ukValue.textContent = match.uk;
-      euValue.textContent = match.eu;
-    }
-
-    // Drag to resize
-    sizerEl.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      startX = e.clientX;
-      sizerEl.setPointerCapture(e.pointerId);
-    });
-    sizerEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      diameterPx = Math.max(30, Math.min(760, diameterPx + dx));
-      startX = e.clientX;
-      updateSizer();
-    });
-    sizerEl.addEventListener('pointerup', () => { dragging = false; });
-
-    // Buttons for circle
-    document.getElementById('circleSmaller').addEventListener('click', () => {
-      diameterPx = Math.max(30, diameterPx - 1);
-      updateSizer();
-    });
-    document.getElementById('circleLarger').addEventListener('click', () => {
-      diameterPx = Math.min(760, diameterPx + 1);
-      updateSizer();
-    });
-    document.getElementById('reset18').addEventListener('click', () => {
-      setDefaultDiameter(18);
-      updateSizer();
-    });
-
-    // Init coin UI + default mode
-    updateCoinUI();
-
-    function updateCoinUI() {
-      document.getElementById('coinEURBtn').classList.toggle('active', true);
-      document.getElementById('coinUSBtn').classList.toggle('active', false);
-      document.getElementById('coinUKBtn').classList.toggle('active', false);
-      document.getElementById('coinCADBtn').classList.toggle('active', false);
-      // (sizes updated dynamically by coin selection handlers)
-    }
-
-    // Coin click handlers to manage 'active' state & target mm
-    document.getElementById('coinEURBtn').addEventListener('click', () => {
-      setCoinTarget(COIN_EUR_1, 'coinEURBtn');
-    });
-    document.getElementById('coinUSBtn').addEventListener('click', () => {
-      setCoinTarget(COIN_US_QUARTER, 'coinUSBtn');
-    });
-    document.getElementById('coinUKBtn').addEventListener('click', () => {
-      setCoinTarget(COIN_UK_1GBP, 'coinUKBtn');
-    });
-    document.getElementById('coinCADBtn').addEventListener('click', () => {
-      setCoinTarget(COIN_CAD_QUART, 'coinCADBtn');
-    });
-
-    let coinTargetMM = COIN_EUR_1;
-    let coinPx = IS_MOBILE ? 150 : 170;
-
-    function setCoinTarget(mm, activeId) {
-      coinTargetMM = mm;
-      ['coinEURBtn','coinUSBtn','coinUKBtn','coinCADBtn'].forEach(id => {
-        document.getElementById(id).classList.toggle('active', id === activeId);
       });
-      coinCircle.style.width = coinPx + 'px';
-      coinCircle.style.height = coinPx + 'px';
-    }
 
-    // +/- for coin
-    document.getElementById('coinSmaller').addEventListener('click', () => {
-      coinPx = Math.max(60, coinPx - 6);
-      coinCircle.style.width = coinPx + 'px';
-      coinCircle.style.height = coinPx + 'px';
-    });
-    document.getElementById('coinLarger').addEventListener('click', () => {
-      coinPx = Math.min(1000, coinPx + 6);
-      coinCircle.style.width = coinPx + 'px';
-      coinCircle.style.height = coinPx + 'px';
-    });
+      // Init coin UI + default mode
+      updateCoinUI();
 
-    document.getElementById('nextBtn1').addEventListener('click', () => {
-      const renderedPx = coinCircle.getBoundingClientRect().width;
-      pxPerMM = renderedPx / coinTargetMM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
-    });
-    document.getElementById('skipBtn1').addEventListener('click', () => {
-      pxPerMM = DEFAULT_PX_PER_MM;
-      localStorage.setItem('pxPerMM', String(pxPerMM));
-      goStep(2);
+      function updateCoinUI() {
+        document.getElementById('coinEURBtn').classList.toggle('active', true);
+        document.getElementById('coinUSBtn').classList.toggle('active', false);
+        document.getElementById('coinUKBtn').classList.toggle('active', false);
+        document.getElementById('coinCADBtn').classList.toggle('active', false);
+        coinCircle.style.width = coinPx + 'px';
+        coinCircle.style.height = coinPx + 'px';
+      }
     });
   </script>
 </body>
