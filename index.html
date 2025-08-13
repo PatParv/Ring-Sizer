@@ -97,6 +97,7 @@
       cursor: pointer;
       font-size: .95rem;
     }
+    /* Divider line between buttons */
     .segmented button + button {
       border-left: 1px solid #d0d0d0;
     }
@@ -119,6 +120,7 @@
       background: #e6e6e6;
       border: 2px solid #111;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+      /* allow dragging */
       pointer-events: auto;
       touch-action: none;
       cursor: grab;
@@ -173,10 +175,13 @@
       .frame { padding: 0; }
       .step { width: 100vw; border-radius: 0; padding: 10px 10px 12px; }
       .stage { width: 100%; max-width: none; margin: 4px 0 6px; }
+      /* keep heights modest to avoid page scroll on phones */
       .stage { height: clamp(280px, 48vh, 420px); }
       #sizerArea.stage { height: clamp(220px, 38vh, 340px); }
       .btn { min-width: 44px; padding: .6rem 1rem; font-size: 1.05rem; border-radius: 12px; }
-      .mode-switch { display: none; } /* Coin-only UX on mobile */
+
+      /* Hide the mode switch on mobile (coin-only UX) */
+      .mode-switch { display: none; }
     }
   </style>
 </head>
@@ -200,6 +205,7 @@
       <div id="coinMode">
         <div class="controls" style="margin-top:.15rem">
           <div id="coinSelector" class="segmented" aria-label="Coin type">
+            <!-- Order + labels -->
             <button id="coinEURBtn" class="active" data-mm="23.25" type="button">€1</button>
             <button id="coinUKBtn"  data-mm="22.5"  type="button">£1</button>
             <button id="coinUSBtn"  data-mm="24.26" type="button">US 25¢</button>
@@ -283,8 +289,7 @@
           step2_subtitle: "Place your ring on the screen and match the circle to the <strong>inner edge</strong>.",
           reset18: "Reset to 18 mm",
           diameter_prefix: "Diameter",
-          max_us13: "(Max US 13)",
-          min_us3: "(Min US 3)"
+          max_us13: "(Max US 13)"
         },
         fi: {
           step1_title: "Vaihe 1: Kalibroi näyttö",
@@ -300,8 +305,7 @@
           step2_subtitle: "Aseta sormus näytölle ja säädä ympyrä vastaamaan <strong>sisäreunaa</strong>.",
           reset18: "Palauta 18 mm",
           diameter_prefix: "Halkaisija",
-          max_us13: "(Enintään US 13)",
-          min_us3: "(Vähintään US 3)"
+          max_us13: "(Enintään US 13)"
         }
       };
 
@@ -330,8 +334,7 @@
       const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
 
       let pxPerMM = null;
-      let MIN_DIAMETER_PX = 0;
-      let MAX_DIAMETER_PX = Infinity;
+      let MAX_DIAMETER_PX = Infinity; // will be tied to US 13 after calibration
 
       // Mode switching (desktop can toggle; mobile defaults to coin)
       const modeCoinBtn = document.getElementById('modeCoinBtn');
@@ -434,7 +437,50 @@
         applyCardWidth(cardWidthPx);
       });
 
-      // ===== Ring sizer data =====
+      // ===== Step switching =====
+      function goStep(n) {
+        document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
+        document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
+        if (n === 2) {
+          if (!pxPerMM) {
+            const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
+            pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
+          }
+          MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;   // hard cap at US 13
+          setDefaultDiameter(18);
+          updateSizer();
+        }
+      }
+
+      document.getElementById('nextBtn1').addEventListener('click', (e) => {
+        e.preventDefault();
+        const renderedPx = coinCircle.getBoundingClientRect().width;
+        pxPerMM = renderedPx / coinTargetMM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+      document.getElementById('skipBtn1').addEventListener('click', (e) => {
+        e.preventDefault();
+        pxPerMM = DEFAULT_PX_PER_MM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+
+      document.getElementById('nextBtn2').addEventListener('click', (e) => {
+        e.preventDefault();
+        const renderedPx = creditCard.getBoundingClientRect().width; // long edge
+        pxPerMM = renderedPx / 85.6;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+      document.getElementById('skipBtn2').addEventListener('click', (e) => {
+        e.preventDefault();
+        pxPerMM = DEFAULT_PX_PER_MM;
+        localStorage.setItem('pxPerMM', String(pxPerMM));
+        goStep(2);
+      });
+
+      // ===== Ring sizer =====
       const sizerEl     = document.getElementById('sizerCircle');
       const sizerArea   = document.getElementById('sizerArea');
       const diameterOut = document.getElementById('diameterOut');
@@ -470,8 +516,8 @@
         { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
       ];
 
-      const MIN_DIAMETER_MM = sizeChart[0].mm;                        // 14.1 (US 3)
-      const MAX_DIAMETER_MM = sizeChart[sizeChart.length - 1].mm;     // 22.2 (US 13)
+      // US 13 diameter in mm (for the hard cap)
+      const MAX_DIAMETER_MM = sizeChart.find(s => s.us === "13").mm;
 
       function nearestSize(mm) {
         return sizeChart.reduce((prev, curr) =>
@@ -480,20 +526,17 @@
       }
 
       function stageLimitPx() {
+        // Keep inside the white box with a little padding
         const rect = sizerArea.getBoundingClientRect();
         const padding = 24; // px margin from the edge
         return Math.max(30, Math.min(rect.width, rect.height) - padding);
       }
 
       function hardMaxPx() {
-        const capByChart = MAX_DIAMETER_PX;   // tied to US 13 after calibration
+        // Cap at US 13 AND never exceed the stage
+        const capByChart = MAX_DIAMETER_PX;               // tied to US 13 after calibration
         const capByStage = stageLimitPx();
         return Math.max(30, Math.min(capByChart, capByStage));
-      }
-
-      function hardMinPx() {
-        // Minimum is the chart min converted to px; never less than some small visual floor
-        return Math.max(30, MIN_DIAMETER_PX || 0);
       }
 
       function setDefaultDiameter(targetMM) {
@@ -501,25 +544,20 @@
           const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
           pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
         }
-        // ensure min/max px are known
-        if (!isFinite(MIN_DIAMETER_PX) || MIN_DIAMETER_PX <= 0) {
-          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
-        }
+        diameterPx = Math.round(pxPerMM * targetMM);
+        // compute MAX if not yet set (e.g., direct load)
         if (!isFinite(MAX_DIAMETER_PX) || MAX_DIAMETER_PX <= 0) {
           MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
         }
-        diameterPx = Math.round(pxPerMM * targetMM);
-        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx));
+        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx));
       }
 
       // expose so i18n can refresh the line
       window._updateDiameterLine = function(){
-        const mm = (diameterPx / (pxPerMM || DEFAULT_PX_PER_MM)).toFixed(1);
-        const match = nearestSize(parseFloat(mm));
-        let notes = [];
-        if (Math.abs(diameterPx - hardMinPx()) < 0.5) notes.push(t('min_us3'));
-        if (Math.abs(diameterPx - hardMaxPx()) < 0.5) notes.push(t('max_us13'));
-        diameterOut.textContent = `${t('diameter_prefix')}: ${mm} mm${notes.length ? ' ' + notes.join(' ') : ''}`;
+        const diameterMM = (diameterPx / (pxPerMM || DEFAULT_PX_PER_MM)).toFixed(1);
+        const match = nearestSize(parseFloat(diameterMM));
+        const maxNote = (diameterPx >= hardMaxPx()) ? ` ${t('max_us13')}` : "";
+        document.getElementById('diameterOut').textContent = `${t('diameter_prefix')}: ${diameterMM} mm${maxNote}`;
         usValue.textContent = match.us;
         ukValue.textContent = match.uk;
         euValue.textContent = match.eu;
@@ -530,15 +568,12 @@
           const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
           pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
         }
-        if (!isFinite(MIN_DIAMETER_PX) || MIN_DIAMETER_PX <= 0) {
-          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
-        }
         if (!isFinite(MAX_DIAMETER_PX) || MAX_DIAMETER_PX <= 0) {
           MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
         }
 
-        // clamp to both min and max (and stage)
-        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx));
+        // re-clamp in case the box/device size changed
+        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx));
 
         sizerEl.style.width  = diameterPx + 'px';
         sizerEl.style.height = diameterPx + 'px';
@@ -546,51 +581,7 @@
         window._updateDiameterLine();
       }
 
-      // ===== Step switching =====
-      function goStep(n) {
-        document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
-        document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
-        if (n === 2) {
-          if (!pxPerMM) {
-            const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
-            pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
-          }
-          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
-          MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
-          setDefaultDiameter(18);
-          updateSizer();
-        }
-      }
-
-      document.getElementById('nextBtn1').addEventListener('click', (e) => {
-        e.preventDefault();
-        const renderedPx = coinCircle.getBoundingClientRect().width;
-        pxPerMM = renderedPx / coinTargetMM;
-        localStorage.setItem('pxPerMM', String(pxPerMM));
-        goStep(2);
-      });
-      document.getElementById('skipBtn1').addEventListener('click', (e) => {
-        e.preventDefault();
-        pxPerMM = DEFAULT_PX_PER_MM;
-        localStorage.setItem('pxPerMM', String(pxPerMM));
-        goStep(2);
-      });
-
-      document.getElementById('nextBtn2').addEventListener('click', (e) => {
-        e.preventDefault();
-        const renderedPx = creditCard.getBoundingClientRect().width; // long edge
-        pxPerMM = renderedPx / 85.6;
-        localStorage.setItem('pxPerMM', String(pxPerMM));
-        goStep(2);
-      });
-      document.getElementById('skipBtn2').addEventListener('click', (e) => {
-        e.preventDefault();
-        pxPerMM = DEFAULT_PX_PER_MM;
-        localStorage.setItem('pxPerMM', String(pxPerMM));
-        goStep(2);
-      });
-
-      // Drag to resize (ring) — respects min/max
+      // Drag to resize (ring)
       sizerEl.addEventListener('pointerdown', (e) => {
         dragging = true;
         startX = e.clientX;
@@ -599,16 +590,16 @@
       sizerEl.addEventListener('pointermove', (e) => {
         if (!dragging) return;
         const dx = e.clientX - startX;
-        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx + dx));
+        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx + dx));
         startX = e.clientX;
         updateSizer();
       });
       sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
-      // Buttons for circle (ring) — respect min/max
+      // Buttons for circle (ring)
       document.getElementById('circleSmaller').addEventListener('click', (e) => {
         e.preventDefault();
-        diameterPx = Math.max(hardMinPx(), diameterPx - 1);
+        diameterPx = Math.max(30, diameterPx - 1);
         updateSizer();
       });
       document.getElementById('circleLarger').addEventListener('click', (e) => {
@@ -622,7 +613,7 @@
         updateSizer();
       });
 
-      // Keep the limits correct on resize/orientation changes
+      // Keep the hard cap correct on resize/orientation changes
       new ResizeObserver(() => {
         updateSizer();
       }).observe(sizerArea);
