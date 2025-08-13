@@ -87,13 +87,18 @@
       border: 1px solid #ddd;
       border-radius: 10px;
       overflow: hidden;
+      background: #f3f3f3;
     }
     .segmented button {
       border: 0;
-      background: #f3f3f3;
+      background: transparent;
       padding: .5rem .9rem;
       cursor: pointer;
       font-size: .95rem;
+    }
+    /* Divider line between buttons */
+    .segmented button + button {
+      border-left: 1px solid #d0d0d0;
     }
     .segmented button.active { background: #fff; font-weight: 700; }
 
@@ -199,11 +204,11 @@
       <div id="coinMode">
         <div class="controls" style="margin-top:.15rem">
           <div id="coinSelector" class="segmented" aria-label="Coin type">
-            <!-- data-mm drives calibration; type="button" ensures reliable clicks -->
+            <!-- Order + labels updated -->
             <button id="coinEURBtn" class="active" data-mm="23.25" type="button">€1</button>
-            <button id="coinUSBtn"  data-mm="24.26" type="button">US quarter</button>
-            <button id="coinUKBtn"  data-mm="22.5"  type="button">UK £1</button>
-            <button id="coinCADBtn" data-mm="23.88" type="button">CAD quarter</button>
+            <button id="coinUKBtn"  data-mm="22.5"  type="button">£1</button>
+            <button id="coinUSBtn"  data-mm="24.26" type="button">US 25¢</button>
+            <button id="coinCADBtn" data-mm="23.88" type="button">CA 25¢</button>
           </div>
         </div>
 
@@ -297,7 +302,7 @@
         modeCardBtn.addEventListener('click', () => setMode('card'));
       }
 
-      // ===== Coin calibration (event delegation for reliability) =====
+      // ===== Coin calibration (event delegation) =====
       const coinSelector = document.getElementById('coinSelector');
       const coinCircle   = document.getElementById('coinCircle');
       const coinSmaller  = document.getElementById('coinSmaller');
@@ -318,16 +323,16 @@
         coinCircle.style.height = coinPx + 'px';
       }
 
-      // Delegate clicks to the container so taps always work
       coinSelector.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         e.preventDefault();
-        const mm = parseFloat(btn.dataset.mm);
-        if (!isNaN(mm)) {
-          coinTargetMM = mm;
-          renderCoinUI();
-        }
+        const newMM = parseFloat(btn.dataset.mm);
+        if (isNaN(newMM)) return;
+        // Slightly adjust the circle size so users see an immediate change
+        coinPx = Math.max(60, Math.min(1000, Math.round(coinPx * (newMM / coinTargetMM))));
+        coinTargetMM = newMM;
+        renderCoinUI();
       });
 
       coinSmaller.addEventListener('click', (e) => {
@@ -517,7 +522,6 @@
       // Initial paint
       renderCoinUI();
       function renderCoinUI() {
-        // highlight default coin button and size of circle
         [...coinSelector.querySelectorAll('button')].forEach(btn => {
           const mm = parseFloat(btn.dataset.mm);
           btn.classList.toggle('active', Math.abs(mm - coinTargetMM) < 0.001);
