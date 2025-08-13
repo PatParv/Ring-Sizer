@@ -41,20 +41,6 @@
     .title { margin: 0 0 .4rem; text-align: center; }
     .subtitle { margin: .2rem 0 .6rem; text-align: center; }
 
-    /* small language toggle (optional) */
-    .lang {
-      position: absolute; top: 8px; right: 8px; z-index: 10;
-      display: inline-flex; gap: 6px; align-items: center;
-      font-size: .9rem; color: #555;
-      background: rgba(255,255,255,.7); padding: 6px 8px; border-radius: 10px;
-      border: 1px solid #e6e6e6;
-    }
-    .lang button {
-      border: 1px solid #ddd; background: #fff; padding: 4px 8px; border-radius: 8px;
-      cursor: pointer; font-size: .9rem;
-    }
-    .lang button.active { font-weight: 700; background: #f7f7f7; }
-
     /* Shared stage (white box) */
     .stage {
       position: relative;
@@ -204,12 +190,6 @@
 
     <!-- STEP 1: Calibration -->
     <section class="step" id="step1">
-      <!-- optional language toggle -->
-      <div class="lang" id="langBar" aria-label="Language">
-        <button type="button" data-lang="fi" id="langFi">FI</button>
-        <button type="button" data-lang="en" id="langEn">EN</button>
-      </div>
-
       <h2 class="title" data-i18n="step1_title">Step 1: Calibrate Your Screen</h2>
       <p class="subtitle" data-i18n="step1_subtitle">Choose your method, then resize to match the real object.</p>
 
@@ -225,7 +205,7 @@
       <div id="coinMode">
         <div class="controls" style="margin-top:.15rem">
           <div id="coinSelector" class="segmented" aria-label="Coin type">
-            <!-- Order + labels (symbols are same in EN/FI) -->
+            <!-- Order + labels -->
             <button id="coinEURBtn" class="active" data-mm="23.25" type="button">€1</button>
             <button id="coinUKBtn"  data-mm="22.5"  type="button">£1</button>
             <button id="coinUSBtn"  data-mm="24.26" type="button">US 25¢</button>
@@ -248,7 +228,7 @@
         </div>
       </div>
 
-      <!-- CARD MODE (desktop default; unchanged) -->
+      <!-- CARD MODE (desktop default) -->
       <div id="cardMode" style="display:none">
         <p class="subtitle" style="margin-top:.25rem" data-i18n="card_hint">Match the long edge of a credit card.</p>
         <div class="stage" id="cardArea">
@@ -258,7 +238,7 @@
           <button class="btn" id="cardSmaller" type="button" data-i18n="minus">−</button>
           <button class="btn" id="cardLarger"  type="button" data-i18n="plus">+</button>
         </div>
-        <div class="controls" style="margin-top:.45rem)">
+        <div class="controls" style="margin-top:.45rem">
           <button class="btn" id="skipBtn2" type="button" data-i18n="skip">Skip calibration</button>
           <button class="btn" id="nextBtn2" type="button" data-i18n="next">Next</button>
         </div>
@@ -345,27 +325,7 @@
           if (key === 'step2_subtitle') el.innerHTML = t(key);
           else el.textContent = t(key);
         });
-        // highlight toggle
-        const fiBtn = document.getElementById('langFi');
-        const enBtn = document.getElementById('langEn');
-        if (fiBtn && enBtn){
-          fiBtn.classList.toggle('active', LANG==='fi');
-          enBtn.classList.toggle('active', LANG==='en');
-        }
         if (window._updateDiameterLine) window._updateDiameterLine();
-      }
-      function setLang(newLang){
-        LANG = newLang;
-        localStorage.setItem('ringSizer.lang', LANG);
-        params.set('lang', LANG);
-        history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
-        applyI18n();
-      }
-      const fiBtn = document.getElementById('langFi');
-      const enBtn = document.getElementById('langEn');
-      if (fiBtn && enBtn){
-        fiBtn.addEventListener('click', ()=> setLang('fi'));
-        enBtn.addEventListener('click', ()=> setLang('en'));
       }
       applyI18n();
 
