@@ -190,19 +190,20 @@
       <!-- Desktop mode switch (hidden on mobile) -->
       <div class="controls mode-switch" style="margin-bottom:.35rem">
         <div class="segmented" role="tablist" aria-label="Calibration method">
-          <button id="modeCoinBtn" class="active" role="tab" aria-selected="true">Coin</button>
-          <button id="modeCardBtn" role="tab" aria-selected="false">Credit card</button>
+          <button id="modeCoinBtn" class="active" role="tab" aria-selected="true" type="button">Coin</button>
+          <button id="modeCardBtn" role="tab" aria-selected="false" type="button">Credit card</button>
         </div>
       </div>
 
       <!-- COIN MODE (mobile default) -->
       <div id="coinMode">
         <div class="controls" style="margin-top:.15rem">
-          <div class="segmented" aria-label="Coin type">
-            <button id="coinEURBtn" class="active">€1</button>
-            <button id="coinUSBtn">US quarter</button>
-            <button id="coinUKBtn">UK £1</button>
-            <button id="coinCADBtn">CAD quarter</button>
+          <div id="coinSelector" class="segmented" aria-label="Coin type">
+            <!-- data-mm drives calibration; type="button" ensures reliable clicks -->
+            <button id="coinEURBtn" class="active" data-mm="23.25" type="button">€1</button>
+            <button id="coinUSBtn"  data-mm="24.26" type="button">US quarter</button>
+            <button id="coinUKBtn"  data-mm="22.5"  type="button">UK £1</button>
+            <button id="coinCADBtn" data-mm="23.88" type="button">CAD quarter</button>
           </div>
         </div>
 
@@ -211,13 +212,13 @@
         </div>
 
         <div class="controls">
-          <button class="btn" id="coinSmaller">−</button>
-          <button class="btn" id="coinLarger">+</button>
+          <button class="btn" id="coinSmaller" type="button">−</button>
+          <button class="btn" id="coinLarger"  type="button">+</button>
         </div>
 
         <div class="controls" style="margin-top:.45rem">
-          <button class="btn" id="skipBtn1">Skip calibration</button>
-          <button class="btn" id="nextBtn1">Next</button>
+          <button class="btn" id="skipBtn1" type="button">Skip calibration</button>
+          <button class="btn" id="nextBtn1" type="button">Next</button>
         </div>
       </div>
 
@@ -228,12 +229,12 @@
           <div id="creditCard"></div>
         </div>
         <div class="controls">
-          <button class="btn" id="cardSmaller">−</button>
-          <button class="btn" id="cardLarger">+</button>
+          <button class="btn" id="cardSmaller" type="button">−</button>
+          <button class="btn" id="cardLarger"  type="button">+</button>
         </div>
         <div class="controls" style="margin-top:.45rem">
-          <button class="btn" id="skipBtn2">Skip calibration</button>
-          <button class="btn" id="nextBtn2">Next</button>
+          <button class="btn" id="skipBtn2" type="button">Skip calibration</button>
+          <button class="btn" id="nextBtn2" type="button">Next</button>
         </div>
       </div>
     </section>
@@ -248,9 +249,9 @@
       </div>
 
       <div class="controls" style="margin-top:.2rem">
-        <button class="btn" id="circleSmaller">−</button>
-        <button class="btn" id="circleLarger">+</button>
-        <button class="btn" id="reset18">Reset to 18 mm</button>
+        <button class="btn" id="circleSmaller" type="button">−</button>
+        <button class="btn" id="circleLarger"  type="button">+</button>
+        <button class="btn" id="reset18"       type="button">Reset to 18 mm</button>
       </div>
 
       <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
@@ -268,12 +269,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
       const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
-
-      // Coin diameters (mm)
-      const COIN_EUR_1      = 23.25;
-      const COIN_US_QUARTER = 24.26;
-      const COIN_UK_1GBP    = 22.5;
-      const COIN_CAD_QUART  = 23.88;
 
       let pxPerMM = null;
 
@@ -297,53 +292,56 @@
 
       // Desktop default: card; Mobile default: coin
       setMode(IS_MOBILE ? 'coin' : 'card');
-
       if (modeCoinBtn && modeCardBtn) {
         modeCoinBtn.addEventListener('click', () => setMode('coin'));
         modeCardBtn.addEventListener('click', () => setMode('card'));
       }
 
-      // ===== Coin calibration =====
-      const coinEURBtn = document.getElementById('coinEURBtn');
-      const coinUSBtn  = document.getElementById('coinUSBtn');
-      const coinUKBtn  = document.getElementById('coinUKBtn');
-      const coinCADBtn = document.getElementById('coinCADBtn');
+      // ===== Coin calibration (event delegation for reliability) =====
+      const coinSelector = document.getElementById('coinSelector');
+      const coinCircle   = document.getElementById('coinCircle');
+      const coinSmaller  = document.getElementById('coinSmaller');
+      const coinLarger   = document.getElementById('coinLarger');
 
-      const coinCircle = document.getElementById('coinCircle');
-      const coinSmaller = document.getElementById('coinSmaller');
-      const coinLarger  = document.getElementById('coinLarger');
+      // Default coin: €1
+      let coinTargetMM = 23.25;
+      let coinPx = IS_MOBILE ? 150 : 170;
 
-      let coinTargetMM = COIN_EUR_1;                // default to €1
-      let coinPx = IS_MOBILE ? 150 : 170;           // start smaller on phones
-
-      function updateCoinUI() {
-        coinEURBtn.classList.toggle('active', coinTargetMM === COIN_EUR_1);
-        coinUSBtn .classList.toggle('active', coinTargetMM === COIN_US_QUARTER);
-        coinUKBtn .classList.toggle('active', coinTargetMM === COIN_UK_1GBP);
-        coinCADBtn.classList.toggle('active', coinTargetMM === COIN_CAD_QUART);
+      function renderCoinUI() {
+        // update active button
+        [...coinSelector.querySelectorAll('button')].forEach(btn => {
+          const mm = parseFloat(btn.dataset.mm);
+          btn.classList.toggle('active', Math.abs(mm - coinTargetMM) < 0.001);
+        });
+        // update circle
         coinCircle.style.width = coinPx + 'px';
         coinCircle.style.height = coinPx + 'px';
       }
 
-      // coin selection
-      coinEURBtn.addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
-      coinUSBtn .addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
-      coinUKBtn .addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
-      coinCADBtn.addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
+      // Delegate clicks to the container so taps always work
+      coinSelector.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        e.preventDefault();
+        const mm = parseFloat(btn.dataset.mm);
+        if (!isNaN(mm)) {
+          coinTargetMM = mm;
+          renderCoinUI();
+        }
+      });
 
-      // +/- buttons
       coinSmaller.addEventListener('click', (e) => {
         e.preventDefault();
         coinPx = Math.max(60, coinPx - 6);
-        updateCoinUI();
+        renderCoinUI();
       });
       coinLarger.addEventListener('click', (e) => {
         e.preventDefault();
         coinPx = Math.min(1000, coinPx + 6);
-        updateCoinUI();
+        renderCoinUI();
       });
 
-      // NEW: drag-to-resize for the coin circle
+      // Drag-to-resize for the coin circle
       let coinDragging = false;
       let coinStartX = 0;
       coinCircle.addEventListener('pointerdown', (e) => {
@@ -356,11 +354,11 @@
         const dx = e.clientX - coinStartX;
         coinPx = Math.max(60, Math.min(1000, coinPx + dx));
         coinStartX = e.clientX;
-        updateCoinUI();
+        renderCoinUI();
       });
       coinCircle.addEventListener('pointerup', () => { coinDragging = false; });
 
-      // compute px/mm from coin
+      // Compute px/mm from the coin match
       document.getElementById('nextBtn1').addEventListener('click', (e) => {
         e.preventDefault();
         const renderedPx = coinCircle.getBoundingClientRect().width;
@@ -376,8 +374,8 @@
       });
 
       // ===== Card calibration (desktop) =====
-      const creditCard = document.getElementById('creditCard');
-      let cardWidthPx = IS_MOBILE ? 320 : 380;
+      const creditCard  = document.getElementById('creditCard');
+      let cardWidthPx   = IS_MOBILE ? 320 : 380;
 
       function applyCardWidth(px) { creditCard.style.width = px + 'px'; }
       applyCardWidth(cardWidthPx);
@@ -418,11 +416,11 @@
       }
 
       // ===== Ring sizer =====
-      const sizerEl = document.getElementById('sizerCircle');
+      const sizerEl     = document.getElementById('sizerCircle');
       const diameterOut = document.getElementById('diameterOut');
-      const usValue = document.getElementById('usValue');
-      const ukValue = document.getElementById('ukValue');
-      const euValue = document.getElementById('euValue');
+      const usValue     = document.getElementById('usValue');
+      const ukValue     = document.getElementById('ukValue');
+      const euValue     = document.getElementById('euValue');
 
       let diameterPx = 0;
       let dragging = false;
@@ -516,13 +514,14 @@
         updateSizer();
       });
 
-      // Init coin UI + default mode
-      updateCoinUI();
-      function updateCoinUI() {
-        document.getElementById('coinEURBtn').classList.toggle('active', true);
-        document.getElementById('coinUSBtn').classList.toggle('active', false);
-        document.getElementById('coinUKBtn').classList.toggle('active', false);
-        document.getElementById('coinCADBtn').classList.toggle('active', false);
+      // Initial paint
+      renderCoinUI();
+      function renderCoinUI() {
+        // highlight default coin button and size of circle
+        [...coinSelector.querySelectorAll('button')].forEach(btn => {
+          const mm = parseFloat(btn.dataset.mm);
+          btn.classList.toggle('active', Math.abs(mm - coinTargetMM) < 0.001);
+        });
         coinCircle.style.width = coinPx + 'px';
         coinCircle.style.height = coinPx + 'px';
       }
