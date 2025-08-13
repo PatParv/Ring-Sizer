@@ -114,7 +114,10 @@
       background: #e6e6e6;
       border: 2px solid #111;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
-      pointer-events: none;
+      /* allow dragging */
+      pointer-events: auto;
+      touch-action: none;
+      cursor: grab;
     }
 
     /* Ring sizer circle */
@@ -322,11 +325,13 @@
         coinCircle.style.height = coinPx + 'px';
       }
 
-      coinEURBtn.addEventListener('click', () => { coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
-      coinUSBtn .addEventListener('click', () => { coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
-      coinUKBtn .addEventListener('click', () => { coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
-      coinCADBtn.addEventListener('click', () => { coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
+      // coin selection
+      coinEURBtn.addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_EUR_1;      updateCoinUI(); });
+      coinUSBtn .addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_US_QUARTER; updateCoinUI(); });
+      coinUKBtn .addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_UK_1GBP;    updateCoinUI(); });
+      coinCADBtn.addEventListener('click', (e) => { e.preventDefault(); coinTargetMM = COIN_CAD_QUART;  updateCoinUI(); });
 
+      // +/- buttons
       coinSmaller.addEventListener('click', (e) => {
         e.preventDefault();
         coinPx = Math.max(60, coinPx - 6);
@@ -338,6 +343,24 @@
         updateCoinUI();
       });
 
+      // NEW: drag-to-resize for the coin circle
+      let coinDragging = false;
+      let coinStartX = 0;
+      coinCircle.addEventListener('pointerdown', (e) => {
+        coinDragging = true;
+        coinStartX = e.clientX;
+        coinCircle.setPointerCapture(e.pointerId);
+      });
+      coinCircle.addEventListener('pointermove', (e) => {
+        if (!coinDragging) return;
+        const dx = e.clientX - coinStartX;
+        coinPx = Math.max(60, Math.min(1000, coinPx + dx));
+        coinStartX = e.clientX;
+        updateCoinUI();
+      });
+      coinCircle.addEventListener('pointerup', () => { coinDragging = false; });
+
+      // compute px/mm from coin
       document.getElementById('nextBtn1').addEventListener('click', (e) => {
         e.preventDefault();
         const renderedPx = coinCircle.getBoundingClientRect().width;
@@ -461,7 +484,7 @@
         euValue.textContent = match.eu;
       }
 
-      // Drag to resize
+      // Drag to resize (ring)
       sizerEl.addEventListener('pointerdown', (e) => {
         dragging = true;
         startX = e.clientX;
@@ -476,7 +499,7 @@
       });
       sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
-      // Buttons for circle
+      // Buttons for circle (ring)
       document.getElementById('circleSmaller').addEventListener('click', (e) => {
         e.preventDefault();
         diameterPx = Math.max(30, diameterPx - 1);
@@ -495,7 +518,6 @@
 
       // Init coin UI + default mode
       updateCoinUI();
-
       function updateCoinUI() {
         document.getElementById('coinEURBtn').classList.toggle('active', true);
         document.getElementById('coinUSBtn').classList.toggle('active', false);
