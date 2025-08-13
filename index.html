@@ -35,10 +35,25 @@
       border: 1px solid #ddd;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      position: relative;
     }
 
     .title { margin: 0 0 .4rem; text-align: center; }
     .subtitle { margin: .2rem 0 .6rem; text-align: center; }
+
+    /* small language toggle (optional) */
+    .lang {
+      position: absolute; top: 8px; right: 8px; z-index: 10;
+      display: inline-flex; gap: 6px; align-items: center;
+      font-size: .9rem; color: #555;
+      background: rgba(255,255,255,.7); padding: 6px 8px; border-radius: 10px;
+      border: 1px solid #e6e6e6;
+    }
+    .lang button {
+      border: 1px solid #ddd; background: #fff; padding: 4px 8px; border-radius: 8px;
+      cursor: pointer; font-size: .9rem;
+    }
+    .lang button.active { font-weight: 700; background: #f7f7f7; }
 
     /* Shared stage (white box) */
     .stage {
@@ -189,14 +204,20 @@
 
     <!-- STEP 1: Calibration -->
     <section class="step" id="step1">
-      <h2 class="title">Step 1: Calibrate Your Screen</h2>
-      <p class="subtitle">Choose your method, then resize to match the real object.</p>
+      <!-- optional language toggle -->
+      <div class="lang" id="langBar" aria-label="Language">
+        <button type="button" data-lang="fi" id="langFi">FI</button>
+        <button type="button" data-lang="en" id="langEn">EN</button>
+      </div>
+
+      <h2 class="title" data-i18n="step1_title">Step 1: Calibrate Your Screen</h2>
+      <p class="subtitle" data-i18n="step1_subtitle">Choose your method, then resize to match the real object.</p>
 
       <!-- Desktop mode switch (hidden on mobile) -->
       <div class="controls mode-switch" style="margin-bottom:.35rem">
         <div class="segmented" role="tablist" aria-label="Calibration method">
-          <button id="modeCoinBtn" class="active" role="tab" aria-selected="true" type="button">Coin</button>
-          <button id="modeCardBtn" role="tab" aria-selected="false" type="button">Credit card</button>
+          <button id="modeCoinBtn" class="active" role="tab" aria-selected="true" type="button" data-i18n="mode_coin">Coin</button>
+          <button id="modeCardBtn" role="tab" aria-selected="false" type="button" data-i18n="mode_card">Credit card</button>
         </div>
       </div>
 
@@ -204,7 +225,7 @@
       <div id="coinMode">
         <div class="controls" style="margin-top:.15rem">
           <div id="coinSelector" class="segmented" aria-label="Coin type">
-            <!-- Order + labels -->
+            <!-- Order + labels (symbols are same in EN/FI) -->
             <button id="coinEURBtn" class="active" data-mm="23.25" type="button">€1</button>
             <button id="coinUKBtn"  data-mm="22.5"  type="button">£1</button>
             <button id="coinUSBtn"  data-mm="24.26" type="button">US 25¢</button>
@@ -217,46 +238,46 @@
         </div>
 
         <div class="controls">
-          <button class="btn" id="coinSmaller" type="button">−</button>
-          <button class="btn" id="coinLarger"  type="button">+</button>
+          <button class="btn" id="coinSmaller" type="button" data-i18n="minus">−</button>
+          <button class="btn" id="coinLarger"  type="button" data-i18n="plus">+</button>
         </div>
 
         <div class="controls" style="margin-top:.45rem">
-          <button class="btn" id="skipBtn1" type="button">Skip calibration</button>
-          <button class="btn" id="nextBtn1" type="button">Next</button>
+          <button class="btn" id="skipBtn1" type="button" data-i18n="skip">Skip calibration</button>
+          <button class="btn" id="nextBtn1" type="button" data-i18n="next">Next</button>
         </div>
       </div>
 
       <!-- CARD MODE (desktop default; unchanged) -->
       <div id="cardMode" style="display:none">
-        <p class="subtitle" style="margin-top:.25rem">Match the long edge of a credit card.</p>
+        <p class="subtitle" style="margin-top:.25rem" data-i18n="card_hint">Match the long edge of a credit card.</p>
         <div class="stage" id="cardArea">
           <div id="creditCard"></div>
         </div>
         <div class="controls">
-          <button class="btn" id="cardSmaller" type="button">−</button>
-          <button class="btn" id="cardLarger"  type="button">+</button>
+          <button class="btn" id="cardSmaller" type="button" data-i18n="minus">−</button>
+          <button class="btn" id="cardLarger"  type="button" data-i18n="plus">+</button>
         </div>
-        <div class="controls" style="margin-top:.45rem">
-          <button class="btn" id="skipBtn2" type="button">Skip calibration</button>
-          <button class="btn" id="nextBtn2" type="button">Next</button>
+        <div class="controls" style="margin-top:.45rem)">
+          <button class="btn" id="skipBtn2" type="button" data-i18n="skip">Skip calibration</button>
+          <button class="btn" id="nextBtn2" type="button" data-i18n="next">Next</button>
         </div>
       </div>
     </section>
 
     <!-- STEP 2: Ring sizer -->
     <section class="step" id="step2" style="display:none;">
-      <h2 class="title">Step 2: Measure Your Ring Size</h2>
-      <p class="subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
+      <h2 class="title" data-i18n="step2_title">Step 2: Measure Your Ring Size</h2>
+      <p class="subtitle" data-i18n="step2_subtitle">Place your ring on the screen and match the circle to the <strong>inner edge</strong>.</p>
 
       <div class="stage" id="sizerArea">
         <div id="sizerCircle"></div>
       </div>
 
       <div class="controls" style="margin-top:.2rem">
-        <button class="btn" id="circleSmaller" type="button">−</button>
-        <button class="btn" id="circleLarger"  type="button">+</button>
-        <button class="btn" id="reset18"       type="button">Reset to 18 mm</button>
+        <button class="btn" id="circleSmaller" type="button" data-i18n="minus">−</button>
+        <button class="btn" id="circleLarger"  type="button" data-i18n="plus">+</button>
+        <button class="btn" id="reset18"       type="button" data-i18n="reset18">Reset to 18 mm</button>
       </div>
 
       <div class="diameter-line" id="diameterOut" aria-live="polite">Diameter: — mm</div>
@@ -272,6 +293,83 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      /* ========= I18N (EN + FI) ========= */
+      const I18N = {
+        en: {
+          step1_title: "Step 1: Calibrate Your Screen",
+          step1_subtitle: "Choose your method, then resize to match the real object.",
+          mode_coin: "Coin",
+          mode_card: "Credit card",
+          minus: "−",
+          plus: "+",
+          skip: "Skip calibration",
+          next: "Next",
+          card_hint: "Match the long edge of a credit card.",
+          step2_title: "Step 2: Measure Your Ring Size",
+          step2_subtitle: "Place your ring on the screen and match the circle to the <strong>inner edge</strong>.",
+          reset18: "Reset to 18 mm",
+          diameter_prefix: "Diameter",
+          max_us13: "(Max US 13)"
+        },
+        fi: {
+          step1_title: "Vaihe 1: Kalibroi näyttö",
+          step1_subtitle: "Valitse menetelmä ja säädä vastaamaan oikeaa esinettä.",
+          mode_coin: "Kolikko",
+          mode_card: "Pankkikortti",
+          minus: "−",
+          plus: "+",
+          skip: "Ohita kalibrointi",
+          next: "Seuraava",
+          card_hint: "Sovita pankkikortin pitkään reunaan.",
+          step2_title: "Vaihe 2: Mittaa sormuskokosi",
+          step2_subtitle: "Aseta sormus näytölle ja säädä ympyrä vastaamaan <strong>sisäreunaa</strong>.",
+          reset18: "Palauta 18 mm",
+          diameter_prefix: "Halkaisija",
+          max_us13: "(Enintään US 13)"
+        }
+      };
+
+      const params = new URLSearchParams(location.search);
+      const urlLang = (params.get('lang') || '').toLowerCase();
+      const storedLang = (localStorage.getItem('ringSizer.lang') || '').toLowerCase();
+      const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
+      let LANG = ['en','fi'].includes(urlLang) ? urlLang
+               : ['en','fi'].includes(storedLang) ? storedLang
+               : (browserLang === 'fi' ? 'fi' : 'en');
+
+      function t(key){ return (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key; }
+      function applyI18n(){
+        document.documentElement.lang = LANG;
+        document.querySelectorAll('[data-i18n]').forEach(el=>{
+          const key = el.getAttribute('data-i18n');
+          if (key === 'step2_subtitle') el.innerHTML = t(key);
+          else el.textContent = t(key);
+        });
+        // highlight toggle
+        const fiBtn = document.getElementById('langFi');
+        const enBtn = document.getElementById('langEn');
+        if (fiBtn && enBtn){
+          fiBtn.classList.toggle('active', LANG==='fi');
+          enBtn.classList.toggle('active', LANG==='en');
+        }
+        if (window._updateDiameterLine) window._updateDiameterLine();
+      }
+      function setLang(newLang){
+        LANG = newLang;
+        localStorage.setItem('ringSizer.lang', LANG);
+        params.set('lang', LANG);
+        history.replaceState({}, '', `${location.pathname}?${params.toString()}`);
+        applyI18n();
+      }
+      const fiBtn = document.getElementById('langFi');
+      const enBtn = document.getElementById('langEn');
+      if (fiBtn && enBtn){
+        fiBtn.addEventListener('click', ()=> setLang('fi'));
+        enBtn.addEventListener('click', ()=> setLang('en'));
+      }
+      applyI18n();
+
+      /* ========= EXISTING APP LOGIC ========= */
       const DEFAULT_PX_PER_MM = 96 / 25.4; // fallback
       const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
 
@@ -303,7 +401,7 @@
         modeCardBtn.addEventListener('click', () => setMode('card'));
       }
 
-      // ===== Coin calibration (event delegation) =====
+      // ===== Coin calibration =====
       const coinSelector = document.getElementById('coinSelector');
       const coinCircle   = document.getElementById('coinCircle');
       const coinSmaller  = document.getElementById('coinSmaller');
@@ -314,12 +412,10 @@
       let coinPx = IS_MOBILE ? 150 : 170;
 
       function renderCoinUI() {
-        // update active button
         [...coinSelector.querySelectorAll('button')].forEach(btn => {
           const mm = parseFloat(btn.dataset.mm);
           btn.classList.toggle('active', Math.abs(mm - coinTargetMM) < 0.001);
         });
-        // update circle
         coinCircle.style.width = coinPx + 'px';
         coinCircle.style.height = coinPx + 'px';
       }
@@ -330,7 +426,6 @@
         e.preventDefault();
         const newMM = parseFloat(btn.dataset.mm);
         if (isNaN(newMM)) return;
-        // Slightly adjust the circle size so users see an immediate change
         coinPx = Math.max(60, Math.min(1000, Math.round(coinPx * (newMM / coinTargetMM))));
         coinTargetMM = newMM;
         renderCoinUI();
@@ -387,19 +482,16 @@
         document.getElementById('step1').style.display = (n === 1 ? 'block' : 'none');
         document.getElementById('step2').style.display = (n === 2 ? 'block' : 'none');
         if (n === 2) {
-          // ensure pxPerMM defined (from calibration or default)
           if (!pxPerMM) {
             const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
             pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
           }
-          // compute MAX based on US 13
-          MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
+          MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;   // hard cap at US 13
           setDefaultDiameter(18);
           updateSizer();
         }
       }
 
-      // Calibration complete -> compute pxPerMM and jump to step 2
       document.getElementById('nextBtn1').addEventListener('click', (e) => {
         e.preventDefault();
         const renderedPx = coinCircle.getBoundingClientRect().width;
@@ -500,6 +592,17 @@
         diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx));
       }
 
+      // expose so i18n can refresh the line
+      window._updateDiameterLine = function(){
+        const diameterMM = (diameterPx / (pxPerMM || DEFAULT_PX_PER_MM)).toFixed(1);
+        const match = nearestSize(parseFloat(diameterMM));
+        const maxNote = (diameterPx >= hardMaxPx()) ? ` ${t('max_us13')}` : "";
+        document.getElementById('diameterOut').textContent = `${t('diameter_prefix')}: ${diameterMM} mm${maxNote}`;
+        usValue.textContent = match.us;
+        ukValue.textContent = match.uk;
+        euValue.textContent = match.eu;
+      };
+
       function updateSizer() {
         if (!pxPerMM) {
           const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
@@ -515,13 +618,7 @@
         sizerEl.style.width  = diameterPx + 'px';
         sizerEl.style.height = diameterPx + 'px';
 
-        const diameterMM = (diameterPx / pxPerMM).toFixed(1);
-        const match = nearestSize(parseFloat(diameterMM));
-
-        diameterOut.textContent = `Diameter: ${diameterMM} mm` + (diameterPx >= hardMaxPx() ? " (Max US 13)" : "");
-        usValue.textContent = match.us;
-        ukValue.textContent = match.uk;
-        euValue.textContent = match.eu;
+        window._updateDiameterLine();
       }
 
       // Drag to resize (ring)
