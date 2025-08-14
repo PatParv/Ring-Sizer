@@ -334,7 +334,8 @@
       const IS_MOBILE = window.matchMedia('(max-width: 520px)').matches;
 
       let pxPerMM = null;
-      let MAX_DIAMETER_PX = Infinity; // will be tied to US 13 after calibration
+      let MIN_DIAMETER_PX = 0;           // NEW: min clamp in px
+      let MAX_DIAMETER_PX = Infinity;    // existing max clamp
 
       // Mode switching (desktop can toggle; mobile defaults to coin)
       const modeCoinBtn = document.getElementById('modeCoinBtn');
@@ -446,6 +447,8 @@
             const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
             pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
           }
+          // set both clamps based on chart limits after calibration
+          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
           MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;   // hard cap at US 13
           setDefaultDiameter(18);
           updateSizer();
@@ -516,8 +519,9 @@
         { mm: 22.2, us: "13",  uk: "Z",  eu: "70"   }
       ];
 
-      // US 13 diameter in mm (for the hard cap)
-      const MAX_DIAMETER_MM = sizeChart.find(s => s.us === "13").mm;
+      // NEW: set both min and max diameter in mm from chart
+      const MIN_DIAMETER_MM = sizeChart[0].mm;                       // 14.1 (US 3)
+      const MAX_DIAMETER_MM = sizeChart[sizeChart.length - 1].mm;    // 22.2 (US 13)
 
       function nearestSize(mm) {
         return sizeChart.reduce((prev, curr) =>
@@ -539,17 +543,25 @@
         return Math.max(30, Math.min(capByChart, capByStage));
       }
 
+      // NEW: minimum clamp in px
+      function hardMinPx() {
+        return Math.max(30, MIN_DIAMETER_PX || 0);
+      }
+
       function setDefaultDiameter(targetMM) {
         if (!pxPerMM) {
           const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
           pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
         }
-        diameterPx = Math.round(pxPerMM * targetMM);
-        // compute MAX if not yet set (e.g., direct load)
+        // ensure min/max px are known
+        if (!isFinite(MIN_DIAMETER_PX) || MIN_DIAMETER_PX <= 0) {
+          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
+        }
         if (!isFinite(MAX_DIAMETER_PX) || MAX_DIAMETER_PX <= 0) {
           MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
         }
-        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx));
+        diameterPx = Math.round(pxPerMM * targetMM);
+        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx));
       }
 
       // expose so i18n can refresh the line
@@ -568,12 +580,16 @@
           const stored = parseFloat(localStorage.getItem('pxPerMM') || '0');
           pxPerMM = stored > 0 ? stored : DEFAULT_PX_PER_MM;
         }
+        // recompute min/max if needed
+        if (!isFinite(MIN_DIAMETER_PX) || MIN_DIAMETER_PX <= 0) {
+          MIN_DIAMETER_PX = MIN_DIAMETER_MM * pxPerMM;
+        }
         if (!isFinite(MAX_DIAMETER_PX) || MAX_DIAMETER_PX <= 0) {
           MAX_DIAMETER_PX = MAX_DIAMETER_MM * pxPerMM;
         }
 
-        // re-clamp in case the box/device size changed
-        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx));
+        // clamp to BOTH min and max (and stage)
+        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx));
 
         sizerEl.style.width  = diameterPx + 'px';
         sizerEl.style.height = diameterPx + 'px';
@@ -581,7 +597,7 @@
         window._updateDiameterLine();
       }
 
-      // Drag to resize (ring)
+      // Drag to resize (ring) — now respects min + max
       sizerEl.addEventListener('pointerdown', (e) => {
         dragging = true;
         startX = e.clientX;
@@ -590,16 +606,16 @@
       sizerEl.addEventListener('pointermove', (e) => {
         if (!dragging) return;
         const dx = e.clientX - startX;
-        diameterPx = Math.max(30, Math.min(hardMaxPx(), diameterPx + dx));
+        diameterPx = Math.max(hardMinPx(), Math.min(hardMaxPx(), diameterPx + dx));
         startX = e.clientX;
         updateSizer();
       });
       sizerEl.addEventListener('pointerup', () => { dragging = false; });
 
-      // Buttons for circle (ring)
+      // Buttons for circle (ring) — now respect min + max
       document.getElementById('circleSmaller').addEventListener('click', (e) => {
         e.preventDefault();
-        diameterPx = Math.max(30, diameterPx - 1);
+        diameterPx = Math.max(hardMinPx(), diameterPx - 1);
         updateSizer();
       });
       document.getElementById('circleLarger').addEventListener('click', (e) => {
@@ -613,7 +629,7 @@
         updateSizer();
       });
 
-      // Keep the hard cap correct on resize/orientation changes
+      // Keep clamps correct on resize/orientation changes
       new ResizeObserver(() => {
         updateSizer();
       }).observe(sizerArea);
